@@ -1,0 +1,8 @@
+# The release workflow builds module.zip (and a manifest pointing at the release); never commit builds.
+module.zip
+*.zip
+
+# Local scratch
+_*
+.DS_Store
+Thumbs.db

@@ -123,10 +123,28 @@ define('FOUNDRY_ORIGIN', 'https://your-foundry-host');
 
 ### 2. Install this module
 
-Copy this whole folder into your Foundry server's `Data/modules/`
-directory (so it ends up as `Data/modules/dnd-amigos-connector/`), or
-host it somewhere reachable and install by manifest URL pointing at
-`module.json`. Enable it in your world's Manage Modules screen.
+Install it from its GitHub releases: in Foundry, Add-on Modules, Install
+Module, and paste this into "Manifest URL" (replace `<owner>/<repo>` with
+this repository):
+
+```
+https://github.com/<owner>/<repo>/releases/latest/download/module.json
+```
+
+Foundry's **Check for Updates** then picks up every new release from the
+same place. Enable the module in your world's Manage Modules screen. (You
+can also copy this whole folder into your server's `Data/modules/`
+directory, so it ends up as `Data/modules/dnd-amigos-connector/`.)
+
+#### Releasing a new version (for whoever maintains it)
+
+1. Change `version` in `module.json` (and `compatibility.verified` if you
+   tested on a newer Foundry).
+2. Commit, then tag and push: `git tag v1.2.0` and `git push --tags`. The tag
+   must match `module.json`'s version with a leading `v`.
+3. The **Release** workflow (`.github/workflows/release.yml`) builds
+   `module.zip`, points the manifest and download URLs at this repository's
+   latest release, and publishes both files. Nothing to upload by hand.
 
 ### 3. Configure it in Foundry
 
