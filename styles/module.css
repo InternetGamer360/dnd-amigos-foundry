@@ -1,0 +1,259 @@
+/* D&D Amigos Connector — minimal styling for the buttons this module
+   injects into existing Foundry UI. Deliberately light-touch: these
+   buttons should look at home next to Foundry's own, not stand out. */
+
+.dnd-amigos-menu-button {
+  flex: 0 0 auto;
+  width: auto;
+  margin-left: 4px;
+}
+
+.dnd-amigos-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dnd-amigos-menu-item {
+  width: 100%;
+  text-align: left;
+  padding: 6px 10px;
+}
+
+.dnd-amigos-menu-item i {
+  width: 1.2em;
+  text-align: center;
+  margin-right: 4px;
+}
+
+/* "Manage Loot" is deliberately called out in gold within the menu —
+   the user asked for it to stand out from the other, plainer actions. */
+.dnd-amigos-menu-item-gold {
+  color: #7a5c00;
+  border-color: #c9a227;
+}
+
+.dnd-amigos-menu-item-gold i {
+  color: #c9a227;
+}
+
+/* "How to Use This Module" is set apart from the action items below it
+   — it's reference material, not something that does anything, and the
+   user asked for it to be distinct so it doesn't blend into the list. */
+.dnd-amigos-menu-item-help {
+  font-style: italic;
+  padding-bottom: 10px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+}
+
+.dnd-amigos-help {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.dnd-amigos-help-section {
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.dnd-amigos-help-section:last-child {
+  border-bottom: none;
+}
+
+.dnd-amigos-help-section h3 {
+  margin: 0 0 4px 0;
+}
+
+.dnd-amigos-help-section p {
+  margin: 0;
+  opacity: 0.9;
+}
+
+/* "Manage Loot" is styled to look like its counterpart on the D&D
+   Amigos website (pages/loot.php) — same fonts, same parchment/gold/
+   ink palette, same table layout (Description/Qty/Value/Notes) and the
+   same "click + Add Loot, get an editable row at the top" interaction,
+   rather than a generic Foundry dialog with a separate add form. The
+   Cinzel/EB Garamond fonts these rules reference aren't @import'd here
+   — that would fetch them from Google Fonts on every single session
+   load, whether or not anyone ever opens Manage Loot. Instead,
+   ensureLootFontsLoaded() in scripts/main.js injects that same
+   stylesheet lazily, once, the first time the dialog actually opens. */
+
+.dnd-amigos-loot-scroll {
+  --da-gold: #C6A64B;
+  --da-ink: #2A1810;
+  --da-ink-soft: #5A4430;
+  --da-blood: #7A1F1F;
+  --da-parchment: #FBF4E2;
+  font-family: "EB Garamond", Georgia, serif;
+  background: var(--da-parchment);
+  color: var(--da-ink);
+  padding: 14px;
+  border-radius: 6px;
+  border: 1px solid rgba(90, 68, 48, 0.25);
+}
+
+.dnd-amigos-loot-total {
+  font-family: "Cinzel", serif;
+  text-align: center;
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+}
+
+.dnd-amigos-loot-total-value {
+  color: var(--da-blood);
+}
+
+.dnd-amigos-loot-table-wrap {
+  max-height: 340px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+
+table.dnd-amigos-loot-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+table.dnd-amigos-loot-table th,
+table.dnd-amigos-loot-table td {
+  padding: 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+table.dnd-amigos-loot-table th {
+  font-family: "Cinzel", serif;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--da-ink-soft);
+  border-bottom: 2px solid rgba(90, 68, 48, 0.3);
+}
+
+table.dnd-amigos-loot-table td {
+  border-bottom: 1px solid rgba(90, 68, 48, 0.15);
+  color: var(--da-ink);
+}
+
+table.dnd-amigos-loot-table tr:last-child td {
+  border-bottom: none;
+}
+
+.dnd-amigos-loot-empty-row td {
+  text-align: center;
+  font-style: italic;
+  color: var(--da-ink-soft);
+  padding: 20px;
+}
+
+.dnd-amigos-loot-notes {
+  color: var(--da-ink-soft);
+  font-size: 0.85em;
+}
+
+.dnd-amigos-loot-actions {
+  white-space: nowrap;
+}
+
+.dnd-amigos-loot-actions button {
+  font-family: "Cinzel", serif;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 4px 8px;
+  margin-right: 4px;
+  border-radius: 4px;
+  border: 1px solid var(--da-ink-soft);
+  background: transparent;
+  color: var(--da-ink-soft);
+  cursor: pointer;
+}
+
+.dnd-amigos-loot-actions button:hover {
+  color: var(--da-blood);
+  border-color: var(--da-blood);
+}
+
+.dnd-amigos-loot-table input {
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 0.88rem;
+  padding: 5px 7px;
+  border-radius: 4px;
+  border: 1.5px solid var(--da-ink-soft);
+  background: #fff;
+  color: var(--da-ink);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dnd-amigos-loot-table input:focus {
+  outline: none;
+  border-color: var(--da-blood);
+}
+
+.dnd-amigos-loot-table .ml-edit-quantity,
+.dnd-amigos-loot-table .ml-edit-value {
+  width: 60px;
+}
+
+.dnd-amigos-loot-add-btn {
+  font-family: "Cinzel", serif;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 7px 14px;
+  border-radius: 4px;
+  border: 1px solid var(--da-gold);
+  background: var(--da-gold);
+  color: #1a1408;
+  cursor: pointer;
+}
+
+.dnd-amigos-loot-add-btn:hover {
+  filter: brightness(1.05);
+}
+
+.dnd-amigos-test-result {
+  font-weight: bold;
+  min-height: 1.2em;
+}
+
+.dnd-amigos-lookup-results {
+  max-height: 320px;
+  overflow-y: auto;
+  margin-top: 8px;
+}
+
+.dnd-amigos-lookup-entry {
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.dnd-amigos-lookup-entry:last-child {
+  border-bottom: none;
+}
+
+.dnd-amigos-lookup-kind {
+  font-size: 0.8em;
+  opacity: 0.7;
+  margin-left: 4px;
+}
+
+/* NPCs & Places window (scripts/lore.js) */
+.dnd-amigos-lore { max-height: 62vh; overflow-y: auto; padding-right: 4px; }
+.dnd-amigos-lore-entry { cursor: pointer; }
+.dnd-amigos-lore-entry:hover { background: rgba(0,0,0,0.07); }
+.dnd-amigos-lore-count { margin-left: 8px; font-size: 0.8em; opacity: 0.75; }
+.dnd-amigos-lore-back { width: auto; margin-bottom: 8px; }
+.dnd-amigos-lore-portrait { display: block; max-width: 100%; max-height: 220px; margin: 6px auto; border: none; border-radius: 4px; }
+.dnd-amigos-lore-desc { white-space: pre-wrap; }
+.dnd-amigos-note { border: 1px solid rgba(0,0,0,0.25); border-radius: 4px; padding: 5px 8px; margin-bottom: 6px; }
+.dnd-amigos-note-meta { font-size: 0.8em; opacity: 0.75; }
+.dnd-amigos-note-body { white-space: pre-wrap; overflow-wrap: anywhere; }
+.dnd-amigos-note-tools { display: flex; gap: 12px; font-size: 0.8em; }
+.dnd-amigos-note textarea, .dnd-amigos-lore-new { width: 100%; }
+.dnd-amigos-lore-add, .dnd-amigos-note-save, .dnd-amigos-note-cancel { width: auto; margin-top: 4px; }

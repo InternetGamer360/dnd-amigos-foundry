@@ -1,0 +1,18 @@
+<form>
+  {{#if error}}
+    <p class="notes" style="color:#a94442;">{{error}}</p>
+  {{else}}
+    <div class="form-group">
+      <label>{{localize "DNDAMIGOS.Settings.MyUserId.Name"}}</label>
+      <select name="userId" style="width:100%;">
+        <option value="0">{{localize "DNDAMIGOS.Settings.MyUserId.None"}}</option>
+        {{selectOptions choices selected=currentId valueAttr="value" labelAttr="label"}}
+      </select>
+      <p class="notes">{{localize "DNDAMIGOS.Settings.MyUserId.Hint"}}</p>
+    </div>
+  {{/if}}
+
+  <footer class="sheet-footer flexrow">
+    <button type="submit"><i class="fa-solid fa-save"></i> Save</button>
+  </footer>
+</form>

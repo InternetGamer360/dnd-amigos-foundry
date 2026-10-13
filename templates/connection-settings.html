@@ -1,0 +1,39 @@
+<form>
+  <div class="form-group">
+    <label>{{localize "DNDAMIGOS.Settings.SiteUrl.Name"}}</label>
+    <input type="text" name="siteUrl" value="{{siteUrl}}" placeholder="https://dndamigos.com">
+    <p class="notes">{{localize "DNDAMIGOS.Settings.SiteUrl.Hint"}}</p>
+  </div>
+
+  <div class="form-group">
+    <label>{{localize "DNDAMIGOS.Settings.ApiKey.Name"}}</label>
+    <input type="password" name="apiKey" value="{{apiKey}}">
+    <p class="notes">{{localize "DNDAMIGOS.Settings.ApiKey.Hint"}}</p>
+  </div>
+
+  <div class="form-group">
+    <label>{{localize "DNDAMIGOS.Settings.JournalId.Name"}}</label>
+    <input type="number" name="journalId" value="{{journalId}}" min="1" step="1">
+    <p class="notes">{{localize "DNDAMIGOS.Settings.JournalId.Hint"}}</p>
+  </div>
+
+  <div class="form-group">
+    <label>{{localize "DNDAMIGOS.Settings.LootActorId.Name"}}</label>
+    <select name="lootActorId" style="width:100%;">
+      <option value="">&mdash; None &mdash;</option>
+      {{selectOptions lootActors selected=lootActorId valueAttr="value" labelAttr="label"}}
+    </select>
+    <p class="notes">{{localize "DNDAMIGOS.Settings.LootActorId.Hint"}}</p>
+  </div>
+
+  <div class="form-group">
+    <button type="button" data-action="test-connection">
+      <i class="fa-solid fa-plug"></i> Test Connection
+    </button>
+    <p class="dnd-amigos-test-result notes"></p>
+  </div>
+
+  <footer class="sheet-footer flexrow">
+    <button type="submit"><i class="fa-solid fa-save"></i> Save</button>
+  </footer>
+</form>

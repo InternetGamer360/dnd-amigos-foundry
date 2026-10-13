@@ -1,0 +1,1424 @@
+// D&D Amigos Connector — scripts/main.js
+//
+// Everything in this module is a deliberate, click-triggered action.
+// There are no hooks on gameplay events (combat, updateActor, etc.) —
+// only *render* hooks (renderActorSheet, renderJournalDirectory) that
+// place a button when a window/sidebar is drawn. The button click is
+// what does anything; opening a sheet or the sidebar never talks to
+// the site on its own.
+
+import { configureLore, pullLore, describePull, pushLore, openLoreDialog } from './lore.js';
+
+const MODULE_ID = 'dnd-amigos-connector';
+
+// NPCs & Places (scripts/lore.js) gets the pieces of this file it needs handed to it,
+// so the two files never import each other. These are all function declarations or
+// settings read at call time, so wiring them up here is safe.
+configureLore({ MODULE_ID, apiRequest, apiUploadFile, isConfigured, getMyUserId });
+
+/* --------------------------------------------------------------------
+   Settings
+-------------------------------------------------------------------- */
+
+Hooks.once('init', () => {
+  game.settings.register(MODULE_ID, 'siteUrl', {
+    name: 'DNDAMIGOS.Settings.SiteUrl.Name',
+    hint: 'DNDAMIGOS.Settings.SiteUrl.Hint',
+    scope: 'world',
+    config: false,
+    type: String,
+    default: '',
+  });
+
+  game.settings.register(MODULE_ID, 'apiKey', {
+    name: 'DNDAMIGOS.Settings.ApiKey.Name',
+    hint: 'DNDAMIGOS.Settings.ApiKey.Hint',
+    scope: 'world',
+    config: false,
+    type: String,
+    default: '',
+  });
+
+  game.settings.register(MODULE_ID, 'journalId', {
+    name: 'DNDAMIGOS.Settings.JournalId.Name',
+    hint: 'DNDAMIGOS.Settings.JournalId.Hint',
+    scope: 'world',
+    config: false,
+    type: Number,
+    default: 0,
+  });
+
+  // The world's shared party stash — a PF2e "Loot" actor everyone
+  // treats as the collective "closet of things found adventuring,"
+  // not owned by any one PC. Optional: if unset, adding loot through
+  // Manage Loot still posts to the site, it just skips the Foundry side.
+  game.settings.register(MODULE_ID, 'lootActorId', {
+    name: 'DNDAMIGOS.Settings.LootActorId.Name',
+    hint: 'DNDAMIGOS.Settings.LootActorId.Hint',
+    scope: 'world',
+    config: false,
+    type: String,
+    default: '',
+  });
+
+  game.settings.registerMenu(MODULE_ID, 'connectionMenu', {
+    name: 'DNDAMIGOS.SettingsMenu.Name',
+    label: 'DNDAMIGOS.SettingsMenu.Label',
+    hint: 'DNDAMIGOS.SettingsMenu.Hint',
+    icon: 'fa-solid fa-link',
+    type: ConnectionSettingsForm,
+    restricted: true,
+  });
+
+  // Client-scoped (per-browser-profile, not per-world) so each player
+  // picks their own site identity independently — there's still no
+  // Foundry-user-to-site-user mapping otherwise, and this is what lets
+  // Manage Loot's add action / Post Session Update credit the right
+  // person instead of everything landing under the GM's or DM's name.
+  game.settings.register(MODULE_ID, 'myUserId', {
+    name: 'DNDAMIGOS.Settings.MyUserId.Name',
+    hint: 'DNDAMIGOS.Settings.MyUserId.Hint',
+    scope: 'client',
+    config: false,
+    type: Number,
+    default: 0,
+  });
+
+  game.settings.registerMenu(MODULE_ID, 'identityMenu', {
+    name: 'DNDAMIGOS.IdentityMenu.Name',
+    label: 'DNDAMIGOS.IdentityMenu.Label',
+    hint: 'DNDAMIGOS.IdentityMenu.Hint',
+    icon: 'fa-solid fa-id-badge',
+    type: IdentitySettingsForm,
+    restricted: false,
+  });
+});
+
+function isConfigured() {
+  return Boolean(
+    game.settings.get(MODULE_ID, 'siteUrl') &&
+    game.settings.get(MODULE_ID, 'apiKey') &&
+    game.settings.get(MODULE_ID, 'journalId')
+  );
+}
+
+function getMyUserId() {
+  const id = Number(game.settings.get(MODULE_ID, 'myUserId')) || 0;
+  return id || null;
+}
+
+/* --------------------------------------------------------------------
+   First-run setup reminder — a GM installing this module for the first
+   time has no reason to already know it needs a Site URL/API Key/
+   Journal ID, or that it's read from engine/config.php on the website.
+   This just surfaces that instead of leaving them to find the README.
+   Purely informational (nothing here talks to the site) — it shows
+   once per world load and stops on its own the moment the connection
+   is actually configured, so it never nags a world that's already set
+   up.
+-------------------------------------------------------------------- */
+
+Hooks.once('ready', () => {
+  if (!game.user.isGM || isConfigured()) return;
+
+  new Dialog({
+    title: 'D&D Amigos Connector — Setup Needed',
+    content: `
+      <p>This module isn't connected to the D&D Amigos website yet. To finish setup:</p>
+      <ol style="padding-left: 20px; margin: 0 0 10px;">
+        <li>On the website, an admin sets <code>FOUNDRY_API_KEY</code> and
+          <code>FOUNDRY_ORIGIN</code> in <code>engine/config.php</code> —
+          one-time, done once for the whole group.</li>
+        <li>Here, open <strong>Configure Settings &rarr; D&D Amigos
+          Connection</strong> and fill in the Site URL, that same API Key,
+          and the numeric Journal ID for this campaign (visible in the
+          site's URL, e.g. <code>journal.php?id=5</code> &rarr;
+          <code>5</code>).</li>
+        <li>Click <strong>Test Connection</strong> before saving to
+          confirm it's working.</li>
+      </ol>
+      <p>Once that's done, every player (not just the GM) should also open
+        <strong>Configure Settings &rarr; My D&D Amigos Identity</strong>
+        once on each of their devices and pick their own name — that's
+        what credits loot and session posts to the right person.</p>
+    `,
+    buttons: {
+      open: {
+        label: 'Open Connection Settings',
+        icon: '<i class="fa-solid fa-link"></i>',
+        callback: () => new ConnectionSettingsForm().render(true),
+      },
+      later: { label: 'Later' },
+    },
+    default: 'open',
+  }, { width: 480 }).render(true);
+});
+
+/* --------------------------------------------------------------------
+   API client — every call is a plain fetch() to engine/api/foundry/*.php,
+   authenticated with the X-Foundry-Key header (see the site's
+   includes/functions.php require_foundry_key()). No session/cookie
+   involved on either side.
+-------------------------------------------------------------------- */
+
+class DndAmigosApiError extends Error {
+  constructor(message, status = null) {
+    super(message);
+    this.status = status;
+  }
+}
+
+/**
+ * Shared by apiRequest() and apiUploadFile() below — both need the same
+ * "is this even configured" check and base URL, just with a different
+ * request body shape (JSON vs FormData) after this point.
+ */
+function getApiConfig() {
+  const baseUrl = String(game.settings.get(MODULE_ID, 'siteUrl') || '').replace(/\/+$/, '');
+  const apiKey = game.settings.get(MODULE_ID, 'apiKey');
+  if (!baseUrl || !apiKey) {
+    throw new DndAmigosApiError(game.i18n.localize('DNDAMIGOS.Error.NotConfigured'));
+  }
+  return { baseUrl, apiKey };
+}
+
+/**
+ * Shared response handling for both request functions below: parse the
+ * JSON body, and throw a DndAmigosApiError for either a malformed
+ * response or one the server marked as a failure ({ok: false}).
+ */
+async function parseApiResponse(response) {
+  let data;
+  try {
+    data = await response.json();
+  } catch (err) {
+    throw new DndAmigosApiError(`Unexpected response (status ${response.status})`);
+  }
+  if (!data.ok) {
+    throw new DndAmigosApiError(data.error || `Request failed (status ${response.status})`, response.status);
+  }
+  return data;
+}
+
+async function apiRequest(path, { method = 'GET', body = null } = {}) {
+  const { baseUrl, apiKey } = getApiConfig();
+
+  const options = {
+    method,
+    headers: { 'X-Foundry-Key': apiKey },
+  };
+  if (body) {
+    options.headers['Content-Type'] = 'application/json';
+    options.body = JSON.stringify(body);
+  }
+
+  let response;
+  try {
+    response = await fetch(`${baseUrl}/engine/api/foundry/${path}`, options);
+  } catch (err) {
+    throw new DndAmigosApiError(err.message || 'Network error');
+  }
+
+  return parseApiResponse(response);
+}
+
+/**
+ * Same auth/error handling as apiRequest(), but for a multipart file
+ * upload — no Content-Type header set manually (the browser fills in
+ * the multipart boundary itself), and the body is a FormData rather
+ * than a JSON string.
+ */
+async function apiUploadFile(path, formData) {
+  const { baseUrl, apiKey } = getApiConfig();
+
+  let response;
+  try {
+    response = await fetch(`${baseUrl}/engine/api/foundry/${path}`, {
+      method: 'POST',
+      headers: { 'X-Foundry-Key': apiKey },
+      body: formData,
+    });
+  } catch (err) {
+    throw new DndAmigosApiError(err.message || 'Network error');
+  }
+
+  return parseApiResponse(response);
+}
+
+/* --------------------------------------------------------------------
+   Settings form — a plain FormApplication with its own "Test Connection"
+   button, so a GM can confirm the URL/key/journal id are all correct
+   before relying on them anywhere else.
+-------------------------------------------------------------------- */
+
+class ConnectionSettingsForm extends FormApplication {
+  static get defaultOptions() {
+    return foundry.utils.mergeObject(super.defaultOptions, {
+      id: 'dnd-amigos-connection-settings',
+      title: game.i18n.localize('DNDAMIGOS.SettingsMenu.Name'),
+      template: `modules/${MODULE_ID}/templates/connection-settings.html`,
+      width: 480,
+      closeOnSubmit: true,
+    });
+  }
+
+  getData() {
+    // game.actors is already loaded locally — no fetch needed to list
+    // this world's Loot-type actors, unlike everything else in this
+    // form which reads from the site.
+    const lootActors = game.actors
+      .filter((a) => a.type === 'loot')
+      .map((a) => ({ value: a.id, label: a.name }));
+
+    return {
+      siteUrl: game.settings.get(MODULE_ID, 'siteUrl'),
+      apiKey: game.settings.get(MODULE_ID, 'apiKey'),
+      journalId: game.settings.get(MODULE_ID, 'journalId'),
+      lootActorId: game.settings.get(MODULE_ID, 'lootActorId'),
+      lootActors,
+    };
+  }
+
+  activateListeners(html) {
+    super.activateListeners(html);
+    html.find('[data-action="test-connection"]').on('click', async () => {
+      const siteUrl = html.find('[name="siteUrl"]').val();
+      const apiKey = html.find('[name="apiKey"]').val();
+      const journalId = Number(html.find('[name="journalId"]').val());
+      const resultEl = html.find('.dnd-amigos-test-result');
+
+      // Test with whatever's currently typed, not necessarily saved yet.
+      await game.settings.set(MODULE_ID, 'siteUrl', siteUrl);
+      await game.settings.set(MODULE_ID, 'apiKey', apiKey);
+      await game.settings.set(MODULE_ID, 'journalId', journalId);
+
+      try {
+        const data = await apiRequest(`campaign-info.php?journal_id=${journalId}`);
+        resultEl.text(game.i18n.format('DNDAMIGOS.Error.TestConnectionOk', { name: data.journal.name }));
+        resultEl.css('color', 'green');
+      } catch (err) {
+        resultEl.text(game.i18n.format('DNDAMIGOS.Error.TestConnectionFailed', { error: err.message }));
+        resultEl.css('color', 'red');
+      }
+    });
+  }
+
+  async _updateObject(event, formData) {
+    await game.settings.set(MODULE_ID, 'siteUrl', String(formData.siteUrl || '').replace(/\/+$/, ''));
+    await game.settings.set(MODULE_ID, 'apiKey', formData.apiKey || '');
+    await game.settings.set(MODULE_ID, 'journalId', Number(formData.journalId) || 0);
+    await game.settings.set(MODULE_ID, 'lootActorId', formData.lootActorId || '');
+  }
+}
+
+/* --------------------------------------------------------------------
+   Identity form — client-scoped, open to every player (not just the
+   GM): pick which D&D Amigos member you are, from a plain dropdown of
+   site members, so loot/session-post actions get credited correctly.
+-------------------------------------------------------------------- */
+
+class IdentitySettingsForm extends FormApplication {
+  static get defaultOptions() {
+    return foundry.utils.mergeObject(super.defaultOptions, {
+      id: 'dnd-amigos-identity-settings',
+      title: game.i18n.localize('DNDAMIGOS.IdentityMenu.Name'),
+      template: `modules/${MODULE_ID}/templates/identity-settings.html`,
+      width: 420,
+      closeOnSubmit: true,
+    });
+  }
+
+  async getData() {
+    const currentId = getMyUserId();
+
+    if (!isConfigured()) {
+      return { choices: [], currentId, error: game.i18n.localize('DNDAMIGOS.Error.NotConfigured') };
+    }
+
+    try {
+      const data = await apiRequest('members-list.php');
+      const choices = data.members.map((m) => ({ value: m.id, label: m.display_name }));
+      return { choices, currentId, error: null };
+    } catch (err) {
+      return { choices: [], currentId, error: err.message };
+    }
+  }
+
+  async _updateObject(event, formData) {
+    await game.settings.set(MODULE_ID, 'myUserId', Number(formData.userId) || 0);
+  }
+}
+
+/* --------------------------------------------------------------------
+   "D&D Amigos Sync" — actor sheet header button. Named
+   direction-neutrally on purpose: once an actor is linked, clicking it
+   offers both Pull and Push, not just a one-way sync from the site, and
+   the old "Sync from D&D Amigos" label was confusing players who only
+   ever saw the two-way choice.
+-------------------------------------------------------------------- */
+
+Hooks.on('getActorSheetHeaderButtons', (sheet, buttons) => {
+  if (sheet.actor?.type !== 'character') return;
+  buttons.unshift({
+    label: game.i18n.localize('DNDAMIGOS.ActorSheet.HeaderButton'),
+    class: 'dnd-amigos-sync',
+    icon: 'fa-solid fa-arrows-rotate',
+    onclick: () => syncActorFromVault(sheet.actor),
+  });
+});
+
+async function syncActorFromVault(actor) {
+  if (!isConfigured()) {
+    ui.notifications.warn(game.i18n.localize('DNDAMIGOS.ActorSheet.NotConfigured'));
+    return;
+  }
+
+  const linkedId = actor.getFlag(MODULE_ID, 'characterId');
+
+  if (linkedId) {
+    const linkedName = actor.getFlag(MODULE_ID, 'characterName') || actor.name;
+    new Dialog({
+      title: game.i18n.localize('DNDAMIGOS.ActorSheet.DirectionTitle'),
+      content: `<p>${game.i18n.format('DNDAMIGOS.ActorSheet.DirectionBody', { name: linkedName })}</p>`,
+      buttons: {
+        pull: {
+          label: game.i18n.localize('DNDAMIGOS.ActorSheet.PullButton'),
+          icon: '<i class="fa-solid fa-cloud-arrow-down"></i>',
+          callback: async () => {
+            const confirmed = await Dialog.confirm({
+              title: game.i18n.localize('DNDAMIGOS.ActorSheet.ReSyncTitle'),
+              content: `<p>${game.i18n.format('DNDAMIGOS.ActorSheet.ReSyncBody', { name: linkedName })}</p>`,
+            });
+            if (!confirmed) return;
+            await applyCharacterToActor(actor, linkedId);
+          },
+        },
+        push: {
+          label: game.i18n.localize('DNDAMIGOS.ActorSheet.PushButton'),
+          icon: '<i class="fa-solid fa-cloud-arrow-up"></i>',
+          callback: async () => {
+            const confirmed = await Dialog.confirm({
+              title: game.i18n.localize('DNDAMIGOS.ActorSheet.PushConfirmTitle'),
+              content: `<p>${game.i18n.format('DNDAMIGOS.ActorSheet.PushConfirmBody', { name: linkedName })}</p>`,
+            });
+            if (!confirmed) return;
+            await pushActorToVault(actor, linkedId);
+          },
+        },
+        cancel: { label: game.i18n.localize('Cancel') },
+      },
+      default: 'pull',
+    }).render(true);
+    return;
+  }
+
+  let characters;
+  try {
+    const journalId = game.settings.get(MODULE_ID, 'journalId');
+    const data = await apiRequest(`characters-list.php?journal_id=${journalId}`);
+    characters = data.characters;
+  } catch (err) {
+    ui.notifications.error(game.i18n.format('DNDAMIGOS.Error.Generic', { error: err.message }));
+    return;
+  }
+
+  // Always offer both paths — pick an existing vault character, or
+  // create a new one from this actor's current data — rather than
+  // dead-ending when the vault (for this journal) happens to be empty.
+  const hasExisting = characters.length > 0;
+  const options = characters
+    .map((c) => `<option value="${c.id}">${foundry.utils.escapeHTML(c.name)} — ${foundry.utils.escapeHTML(c.player_display || '')}</option>`)
+    .join('');
+
+  new Dialog({
+    title: game.i18n.localize('DNDAMIGOS.ActorSheet.PickerTitle'),
+    content: `
+      <p>${game.i18n.localize('DNDAMIGOS.ActorSheet.PickerHint')}</p>
+      ${hasExisting
+        ? `<select name="character-id" style="width:100%;">${options}</select>`
+        : `<p><em>${game.i18n.localize('DNDAMIGOS.ActorSheet.NoCharacters')}</em></p>`}
+      <p class="notes">${game.i18n.localize('DNDAMIGOS.ActorSheet.CreateNewHint')}</p>
+    `,
+    buttons: {
+      ...(hasExisting ? {
+        sync: {
+          label: game.i18n.localize('DNDAMIGOS.ActorSheet.SyncButton'),
+          callback: async (html) => {
+            const characterId = Number(html.find('[name="character-id"]').val());
+            await applyCharacterToActor(actor, characterId);
+          },
+        },
+      } : {}),
+      create: {
+        label: game.i18n.localize('DNDAMIGOS.ActorSheet.CreateNewButton'),
+        callback: () => createCharacterFromActor(actor),
+      },
+      cancel: { label: game.i18n.localize('Cancel') },
+    },
+    default: hasExisting ? 'sync' : 'create',
+  }).render(true);
+}
+
+async function applyCharacterToActor(actor, characterId) {
+  let character;
+  try {
+    const data = await apiRequest(`character.php?character_id=${characterId}`);
+    character = data.character;
+  } catch (err) {
+    if (err instanceof DndAmigosApiError && err.status === 404) {
+      // The linked Character Vault entry is gone (deleted on the site
+      // since this actor was last synced) — the stale link on its own
+      // is a dead end, so offer a way out instead of just erroring.
+      await offerRecreateAfterMissingCharacter(actor);
+      return;
+    }
+    ui.notifications.error(game.i18n.format('DNDAMIGOS.Error.Generic', { error: err.message }));
+    return;
+  }
+
+  const update = buildBasicPf2eUpdate(character);
+  await actor.update(update);
+  await actor.setFlag(MODULE_ID, 'characterId', character.id);
+  await actor.setFlag(MODULE_ID, 'characterName', character.name);
+
+  if (character.pathbuilder_json) {
+    await actor.setFlag(MODULE_ID, 'pathbuilderJson', character.pathbuilder_json);
+    try {
+      await game.clipboard.copyPlainText(character.pathbuilder_json);
+    } catch (err) {
+      // Clipboard access can be blocked by the browser outside a direct
+      // user gesture context in some setups — the JSON is still saved
+      // on the actor's flags either way, just not auto-copied.
+    }
+    ui.notifications.info(game.i18n.format('DNDAMIGOS.ActorSheet.SyncedBasic', { name: character.name }));
+    ui.notifications.info(game.i18n.format('DNDAMIGOS.ActorSheet.PathbuilderCopied', { name: character.name }), { permanent: true });
+  } else {
+    ui.notifications.info(game.i18n.format('DNDAMIGOS.ActorSheet.SyncedThin', { name: character.name }));
+  }
+}
+
+/**
+ * The "Push to Site" direction — reads this actor's CURRENT basic
+ * fields (extractBasicCharacterFromActor(), the same helper "Create New
+ * on Site" uses) and overwrites the linked Character Vault entry with
+ * them via api/foundry/update-character.php. Requires an identity to be
+ * set, same as Manage Loot's add action/Create New — and the site
+ * itself only allows the push through if that identity is the
+ * character's actual owner there (api/foundry/update-character.php's
+ * own check), so this module doesn't need to guess or duplicate that
+ * rule.
+ */
+async function pushActorToVault(actor, characterId) {
+  const myUserId = getMyUserId();
+  if (!myUserId) {
+    ui.notifications.warn(game.i18n.localize('DNDAMIGOS.ActorSheet.NoIdentityWarning'));
+    return;
+  }
+
+  const payload = { character_id: characterId, user_id: myUserId, ...extractBasicCharacterFromActor(actor) };
+
+  let character;
+  try {
+    const data = await apiRequest('update-character.php', { method: 'POST', body: payload });
+    character = data.character;
+  } catch (err) {
+    ui.notifications.error(game.i18n.format('DNDAMIGOS.Error.Generic', { error: err.message }));
+    return;
+  }
+
+  await actor.setFlag(MODULE_ID, 'characterName', character.name);
+
+  const tokenResult = await pushActorTokenToVault(actor, characterId, myUserId);
+  if (tokenResult.status === 'error') {
+    ui.notifications.warn(game.i18n.format('DNDAMIGOS.ActorSheet.PushedStatsTokenFailed', { name: character.name, error: tokenResult.error }));
+  } else {
+    ui.notifications.info(game.i18n.format('DNDAMIGOS.ActorSheet.PushedToSite', { name: character.name }));
+  }
+}
+
+/**
+ * Pushes this actor's current portrait (actor.img) to the site as the
+ * linked character's token — a separate multipart request from
+ * update-character.php's JSON body, same split the site's own manual
+ * token-upload form uses (create/update the row, then a follow-up
+ * upload-token.php call). Skipped entirely — no error, nothing
+ * reported — for an obviously-default Foundry icon (anything ending in
+ * .svg): the site only accepts JPEG/PNG/WEBP/GIF anyway, so pushing a
+ * generic placeholder like icons/svg/mystery-man.svg would just fail
+ * loudly for no reason.
+ */
+async function pushActorTokenToVault(actor, characterId, userId) {
+  const imgSrc = actor.img;
+  if (!imgSrc || imgSrc.toLowerCase().endsWith('.svg')) {
+    return { status: 'skipped' };
+  }
+
+  let blob;
+  try {
+    const imgResponse = await fetch(imgSrc);
+    blob = await imgResponse.blob();
+  } catch (err) {
+    return { status: 'error', error: err.message };
+  }
+
+  const filename = imgSrc.split('/').pop() || 'token.png';
+  const formData = new FormData();
+  formData.append('character_id', characterId);
+  formData.append('user_id', userId);
+  formData.append('token', blob, filename);
+
+  try {
+    await apiUploadFile('upload-token.php', formData);
+    return { status: 'pushed' };
+  } catch (err) {
+    return { status: 'error', error: err.message };
+  }
+}
+
+/**
+ * Recovery path for a stale link: this actor's characterId flag points
+ * at a Character Vault entry that's been deleted on the site since the
+ * last sync. Either way, the dead link gets cleared — it can never
+ * resolve again — and the user's offered a straight path to create a
+ * fresh entry from the actor's current data instead of a dead end.
+ */
+async function offerRecreateAfterMissingCharacter(actor) {
+  const missingName = actor.getFlag(MODULE_ID, 'characterName') || actor.name;
+
+  new Dialog({
+    title: game.i18n.localize('DNDAMIGOS.ActorSheet.MissingTitle'),
+    content: `<p>${game.i18n.format('DNDAMIGOS.ActorSheet.MissingBody', { name: missingName })}</p>`,
+    buttons: {
+      create: {
+        label: game.i18n.localize('DNDAMIGOS.ActorSheet.CreateNewButton'),
+        icon: '<i class="fa-solid fa-plus"></i>',
+        callback: async () => {
+          await actor.unsetFlag(MODULE_ID, 'characterId');
+          await actor.unsetFlag(MODULE_ID, 'characterName');
+          await createCharacterFromActor(actor);
+        },
+      },
+      unlink: {
+        label: game.i18n.localize('DNDAMIGOS.ActorSheet.UnlinkButton'),
+        callback: async () => {
+          await actor.unsetFlag(MODULE_ID, 'characterId');
+          await actor.unsetFlag(MODULE_ID, 'characterName');
+          ui.notifications.info(game.i18n.localize('DNDAMIGOS.ActorSheet.Unlinked'));
+        },
+      },
+      cancel: { label: game.i18n.localize('Cancel') },
+    },
+    default: 'create',
+  }).render(true);
+}
+
+/**
+ * The write counterpart to buildBasicPf2eUpdate() below — reads this
+ * actor's current *basic* fields back out to send to
+ * create-character.php. Same scope limit applies in reverse: no
+ * attempt to serialize feats/skills/spells, just what a Character
+ * Vault row actually has columns for.
+ */
+function extractBasicCharacterFromActor(actor) {
+  const abilities = actor.system?.abilities || {};
+  // Character Vault stores a raw ability score, not a modifier — this
+  // is the inverse of buildBasicPf2eUpdate()'s abilityMod(), so a
+  // round-trip (pull, then push back unedited) doesn't drift the score.
+  const scoreFromMod = (mod) => (Number(mod) || 0) * 2 + 10;
+
+  return {
+    name: actor.name,
+    level: actor.system?.details?.level?.value ?? 1,
+    str: scoreFromMod(abilities.str?.mod),
+    dex: scoreFromMod(abilities.dex?.mod),
+    con: scoreFromMod(abilities.con?.mod),
+    intel: scoreFromMod(abilities.int?.mod),
+    wis: scoreFromMod(abilities.wis?.mod),
+    cha: scoreFromMod(abilities.cha?.mod),
+    hp_current: actor.system?.attributes?.hp?.value ?? null,
+    hp_max: actor.system?.attributes?.hp?.max ?? null,
+    armor_class: actor.system?.attributes?.ac?.value ?? null,
+    // pf2e stores class/ancestry/background as embedded Items, not
+    // plain text fields — actor.class/.ancestry/.background are the
+    // system's own convenience getters for them, undefined if the
+    // actor doesn't have one of those Items yet.
+    class: actor.class?.name ?? null,
+    race: actor.ancestry?.name ?? null,
+    background: actor.background?.name ?? null,
+  };
+}
+
+async function createCharacterFromActor(actor) {
+  const myUserId = getMyUserId();
+  if (!myUserId) {
+    ui.notifications.warn(game.i18n.localize('DNDAMIGOS.ActorSheet.NoIdentityWarning'));
+    return;
+  }
+
+  const journalId = game.settings.get(MODULE_ID, 'journalId');
+  const payload = { journal_id: journalId, user_id: myUserId, ...extractBasicCharacterFromActor(actor) };
+
+  let character;
+  try {
+    const data = await apiRequest('create-character.php', { method: 'POST', body: payload });
+    character = data.character;
+  } catch (err) {
+    ui.notifications.error(game.i18n.format('DNDAMIGOS.Error.Generic', { error: err.message }));
+    return;
+  }
+
+  await actor.setFlag(MODULE_ID, 'characterId', character.id);
+  await actor.setFlag(MODULE_ID, 'characterName', character.name);
+  ui.notifications.info(game.i18n.format('DNDAMIGOS.ActorSheet.CreatedOnSite', { name: character.name }));
+}
+
+/**
+ * Maps what the Character Vault actually stores onto a PF2e character
+ * actor's *basic* fields only — name, level, current HP, and ability
+ * modifiers computed from the vault's raw scores. Deliberately does
+ * NOT attempt to attach ancestry/background/class Items, skills,
+ * proficiency ranks, feats, or spells: pf2e actors build those from
+ * real compendium Items with their own rule elements, and guessing at
+ * that mapping here would be far less reliable than the pf2e system's
+ * own "Import from Pathbuilder" tool, which already solves it — see
+ * applyCharacterToActor()'s clipboard-copy of the raw Pathbuilder JSON
+ * for that path. If the pf2e system changes these basic field paths in
+ * a future update, this is the one function to fix.
+ */
+function buildBasicPf2eUpdate(character) {
+  const abilityMod = (score) => Math.floor(((Number(score) || 10) - 10) / 2);
+
+  const update = {
+    name: character.name,
+    system: {
+      details: {
+        level: { value: Number(character.level) || 1 },
+      },
+      abilities: {
+        str: { mod: abilityMod(character.str) },
+        dex: { mod: abilityMod(character.dex) },
+        con: { mod: abilityMod(character.con) },
+        int: { mod: abilityMod(character.intel) },
+        wis: { mod: abilityMod(character.wis) },
+        cha: { mod: abilityMod(character.cha) },
+      },
+    },
+  };
+
+  if (character.hp_current !== null && character.hp_current !== undefined) {
+    update.system.attributes = { hp: { value: Number(character.hp_current) } };
+  }
+
+  return update;
+}
+
+/* --------------------------------------------------------------------
+   A single "D&D Amigos" journal directory button opening a menu of
+   every journal-adjacent action — Post Session Update, Manage Loot,
+   Look Up, and (GM-only) Import from D&D Amigos.
+-------------------------------------------------------------------- */
+
+console.log(`${MODULE_ID} | main.js loaded, registering renderJournalDirectory`);
+
+/**
+ * Builds one toolbar button and wires its click handler — used by
+ * renderJournalDirectory below so each button (GM-only or open to
+ * everyone) is a one-liner.
+ */
+function addDirectoryButton(container, { className, icon, labelKey, onClick }) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = className;
+  btn.innerHTML = `<i class="fa-solid ${icon}"></i> ${game.i18n.localize(labelKey)}`;
+  btn.addEventListener('click', onClick);
+  container.appendChild(btn);
+  return btn;
+}
+
+/**
+ * The single "D&D Amigos" journal directory button opens this menu
+ * instead of running an action directly — a plain vertical list of
+ * Dialog buttons rather than a Foundry ContextMenu, since that's the
+ * same well-established API the rest of this module already leans on
+ * (NPCs & Places, Manage Loot, etc.), with no positioning quirks to worry
+ * about across Foundry versions. Post Session Update, Manage Loot, and
+ * NPCs & Places are open to every player; Import from D&D Amigos and Push
+ * NPCs & Places to Site stay GM-only, since they create or send the
+ * campaign's lore (real JournalEntry world documents, which players can't
+ * by default).
+ */
+function openAmigosMenu() {
+  const entries = [
+    { action: 'help', icon: 'fa-circle-question', labelKey: 'DNDAMIGOS.JournalDirectory.HelpButton', onClick: openHelpDialog, help: true },
+    { action: 'post-event', icon: 'fa-paper-plane', labelKey: 'DNDAMIGOS.JournalDirectory.PostEvent', onClick: openPostEventDialog },
+    { action: 'manage-loot', icon: 'fa-sack-dollar', labelKey: 'DNDAMIGOS.JournalDirectory.ManageLoot', onClick: openManageLootDialog, gold: true },
+    { action: 'lookup', icon: 'fa-users', labelKey: 'DNDAMIGOS.JournalDirectory.Lookup', onClick: openLoreDialog },
+  ];
+  if (game.user.isGM) {
+    entries.push({ action: 'import-info', icon: 'fa-download', labelKey: 'DNDAMIGOS.JournalDirectory.ImportInfo', onClick: importCampaignInfo });
+    entries.push({ action: 'push-lore', icon: 'fa-upload', labelKey: 'DNDAMIGOS.JournalDirectory.PushLore', onClick: pushLore });
+  }
+
+  const dialog = new Dialog({
+    title: game.i18n.localize('DNDAMIGOS.Menu.Title'),
+    content: `
+      <div class="dnd-amigos-menu-list">
+        ${entries.map((e) => `
+          <button type="button" class="dnd-amigos-menu-item${e.gold ? ' dnd-amigos-menu-item-gold' : ''}${e.help ? ' dnd-amigos-menu-item-help' : ''}" data-action="${e.action}">
+            <i class="fa-solid ${e.icon}"></i>${game.i18n.localize(e.labelKey)}
+          </button>
+        `).join('')}
+      </div>
+    `,
+    buttons: { close: { label: game.i18n.localize('Close') } },
+    render: (html) => {
+      entries.forEach((e) => {
+        html.find(`[data-action="${e.action}"]`).on('click', () => {
+          dialog.close();
+          e.onClick();
+        });
+      });
+    },
+  }, { width: 320 });
+  dialog.render(true);
+}
+
+/**
+ * A plain-language reference for every feature this module has, opened
+ * from the top of the D&D Amigos menu — added after real players
+ * reported confusion about what individual buttons actually do (e.g.
+ * the actor sheet's sync button, before it was renamed to be
+ * direction-neutral). Static content, no API calls — just localized
+ * title/body pairs rendered as a scrollable list of sections.
+ */
+function openHelpDialog() {
+  const sections = [
+    ['DNDAMIGOS.Help.Sync.Title', 'DNDAMIGOS.Help.Sync.Body'],
+    ['DNDAMIGOS.Help.PostEvent.Title', 'DNDAMIGOS.Help.PostEvent.Body'],
+    ['DNDAMIGOS.Help.ManageLoot.Title', 'DNDAMIGOS.Help.ManageLoot.Body'],
+    ['DNDAMIGOS.Help.Lookup.Title', 'DNDAMIGOS.Help.Lookup.Body'],
+    ['DNDAMIGOS.Help.PushLore.Title', 'DNDAMIGOS.Help.PushLore.Body'],
+    ['DNDAMIGOS.Help.ImportInfo.Title', 'DNDAMIGOS.Help.ImportInfo.Body'],
+    ['DNDAMIGOS.Help.Identity.Title', 'DNDAMIGOS.Help.Identity.Body'],
+  ];
+
+  new Dialog({
+    title: game.i18n.localize('DNDAMIGOS.Help.Title'),
+    content: `
+      <div class="dnd-amigos-help">
+        ${sections.map(([titleKey, bodyKey]) => `
+          <div class="dnd-amigos-help-section">
+            <h3>${game.i18n.localize(titleKey)}</h3>
+            <p>${game.i18n.localize(bodyKey)}</p>
+          </div>
+        `).join('')}
+      </div>
+    `,
+    buttons: { close: { label: game.i18n.localize('Close') } },
+  }, { width: 480 }).render(true);
+}
+
+Hooks.on('renderJournalDirectory', (app, html) => {
+  try {
+    // Foundry v13+ moved the core sidebar tabs to ApplicationV2, which
+    // hands render hooks a plain HTMLElement instead of the jQuery
+    // object older versions used — html.find() would throw on that
+    // (silently, since Foundry wraps each hook callback so one failing
+    // hook doesn't break the others, which is exactly why this went
+    // unnoticed rather than erroring visibly). Normalize to a real
+    // element and use native DOM methods throughout so this works on
+    // either kind of value.
+    const root = html instanceof HTMLElement ? html : html?.[0];
+    if (!root) {
+      console.warn(`${MODULE_ID} | renderJournalDirectory fired but no usable root element was found`, html);
+      return;
+    }
+
+    // Try known container class names across several Foundry versions
+    // before falling back to the tab's own root element — the
+    // sidebar's internal markup has moved more than once.
+    const container =
+      root.querySelector('.directory-header .header-actions') ||
+      root.querySelector('.directory-header') ||
+      root.querySelector('.directory-footer') ||
+      root;
+
+    // A single entry point instead of five separate buttons — saves
+    // sidebar space and gives the feature set room to grow without the
+    // directory header turning into a wall of icons. Every action still
+    // opens from a deliberate click; this just adds one extra click
+    // (open the menu, then pick) to reach any one of them.
+    addDirectoryButton(container, {
+      className: 'dnd-amigos-menu-button',
+      icon: 'fa-dice-d20',
+      labelKey: 'DNDAMIGOS.JournalDirectory.MenuButton',
+      onClick: openAmigosMenu,
+    });
+
+    console.log(`${MODULE_ID} | journal directory button injected into`, container);
+  } catch (err) {
+    // Never let this hook throw silently again — log loudly so a
+    // future "no journal buttons" report comes with a real stack trace
+    // in the console instead of nothing at all.
+    console.error(`${MODULE_ID} | renderJournalDirectory handler failed`, err);
+  }
+});
+
+/* --------------------------------------------------------------------
+   "Post Session Update" — D&D Amigos menu item, open to everyone. A
+   small dialog to message the campaign's Discord, optionally also
+   logging it as a real entry in the site's session log.
+-------------------------------------------------------------------- */
+
+function openPostEventDialog() {
+  if (!isConfigured()) {
+    ui.notifications.warn(game.i18n.localize('DNDAMIGOS.ActorSheet.NotConfigured'));
+    return;
+  }
+
+  new Dialog({
+    title: game.i18n.localize('DNDAMIGOS.PostEvent.Title'),
+    content: `
+      <div class="form-group">
+        <label>${game.i18n.localize('DNDAMIGOS.PostEvent.MessageLabel')}</label>
+        <textarea name="message" rows="4" style="width:100%;"></textarea>
+      </div>
+      <div class="form-group">
+        <label>
+          <input type="checkbox" name="log-to-journal" checked>
+          ${game.i18n.localize('DNDAMIGOS.PostEvent.LogToJournalLabel')}
+        </label>
+      </div>
+    `,
+    buttons: {
+      send: {
+        label: game.i18n.localize('DNDAMIGOS.PostEvent.Send'),
+        callback: async (html) => {
+          const message = html.find('[name="message"]').val().trim();
+          const logToJournal = html.find('[name="log-to-journal"]').is(':checked');
+          if (!message) return;
+
+          try {
+            const journalId = game.settings.get(MODULE_ID, 'journalId');
+            const data = await apiRequest('post-event.php', {
+              method: 'POST',
+              body: { journal_id: journalId, message, log_to_journal: logToJournal, user_id: getMyUserId() },
+            });
+            ui.notifications.info(
+              data.logged_to_journal
+                ? game.i18n.localize('DNDAMIGOS.PostEvent.Success')
+                : game.i18n.localize('DNDAMIGOS.PostEvent.SuccessNoLog')
+            );
+          } catch (err) {
+            ui.notifications.error(game.i18n.format('DNDAMIGOS.Error.Generic', { error: err.message }));
+          }
+        },
+      },
+      cancel: { label: game.i18n.localize('Cancel') },
+    },
+    default: 'send',
+  }).render(true);
+}
+
+/* --------------------------------------------------------------------
+   Foundry-side loot sync — the three functions below back Manage
+   Loot's add/edit/delete actions, dropping/updating/removing a plain
+   PF2e Item on this world's configured Loot actor (Configure Settings
+   → D&D Amigos Connection → Loot Actor), the shared "closet of things
+   found adventuring," not owned by any one PC. Optional: if no Loot
+   actor is configured, Manage Loot's site-side actions still work, they
+   just skip this part.
+-------------------------------------------------------------------- */
+
+/**
+ * Shared by all three functions below: resolves this world's
+ * configured Loot actor, or the specific reason it couldn't
+ * ({status: 'no-actor-configured'} if the setting is empty,
+ * {status: 'actor-missing'} if it points at an actor that's since been
+ * deleted). Callers check `result.status` — if unset, `result.lootActor`
+ * is ready to use.
+ */
+function getConfiguredLootActor() {
+  const lootActorId = game.settings.get(MODULE_ID, 'lootActorId');
+  if (!lootActorId) {
+    return { status: 'no-actor-configured' };
+  }
+  const lootActor = game.actors.get(lootActorId);
+  if (!lootActor) {
+    return { status: 'actor-missing' };
+  }
+  return { lootActor };
+}
+
+/**
+ * The pf2e `system` data shared by creating and updating a Loot actor's
+ * Item in the three functions below — `equipment` is pf2e's generic
+ * catch-all physical-item type, reasonable for a free-typed name with
+ * no real item data behind it. If a future pf2e update renames
+ * quantity/price/description, this is the one place to fix.
+ */
+function buildLootItemSystemData(quantity, valueGp, notes) {
+  return {
+    quantity,
+    price: { value: valueGp ? { gp: valueGp } : {} },
+    description: { value: notes ? `<p>${foundry.utils.escapeHTML(notes)}</p>` : '' },
+  };
+}
+
+async function addLootItemToFoundryActor(name, quantity, valueGp, notes) {
+  const found = getConfiguredLootActor();
+  if (found.status) return found;
+
+  try {
+    const created = await found.lootActor.createEmbeddedDocuments('Item', [{
+      name,
+      type: 'equipment',
+      img: 'icons/svg/chest.svg',
+      system: buildLootItemSystemData(quantity, valueGp, notes),
+    }]);
+    return { status: 'added', foundryItemId: created?.[0]?.id ?? null };
+  } catch (err) {
+    return { status: 'error', error: err.message };
+  }
+}
+
+/**
+ * After a loot line is created on both the site and this world's Loot
+ * actor, records the Foundry Item's id back on the site row
+ * (loot_items.foundry_item_id) so a later edit/delete via "Manage Loot"
+ * knows which embedded Item to keep in sync. Best-effort and silent —
+ * both halves of the add already succeeded independently by this
+ * point, so a failure here just means this one item won't sync on
+ * future edits, not that anything needs to be undone.
+ */
+async function linkFoundryItemToSiteLoot(siteItemId, foundryItemId) {
+  if (!siteItemId || !foundryItemId) {
+    return;
+  }
+  try {
+    await apiRequest('update-loot.php', {
+      method: 'POST',
+      body: { id: siteItemId, foundry_item_id: foundryItemId },
+    });
+  } catch (err) {
+    console.warn(`${MODULE_ID} | failed to link Foundry item ${foundryItemId} to site loot item ${siteItemId}`, err);
+  }
+}
+
+/**
+ * The Foundry-side half of a "Manage Loot" edit: updates the matching
+ * Item on the configured Loot actor by its stored foundry_item_id.
+ * Returns 'item-missing' rather than throwing if that Item was deleted
+ * directly in Foundry since — the site's own update still stands
+ * either way, this just couldn't also mirror it here.
+ */
+async function updateLootItemOnFoundryActor(foundryItemId, name, quantity, valueGp, notes) {
+  const found = getConfiguredLootActor();
+  if (found.status) return found;
+  if (!found.lootActor.items.get(foundryItemId)) {
+    return { status: 'item-missing' };
+  }
+  try {
+    await found.lootActor.updateEmbeddedDocuments('Item', [{
+      _id: foundryItemId,
+      name,
+      system: buildLootItemSystemData(quantity, valueGp, notes),
+    }]);
+    return { status: 'updated' };
+  } catch (err) {
+    return { status: 'error', error: err.message };
+  }
+}
+
+/**
+ * The Foundry-side half of a "Manage Loot" delete: removes the
+ * matching Item from the configured Loot actor by its stored
+ * foundry_item_id. Same tolerant-of-drift behavior as the update
+ * helper above.
+ */
+async function deleteLootItemFromFoundryActor(foundryItemId) {
+  const found = getConfiguredLootActor();
+  if (found.status) return found;
+  if (!found.lootActor.items.get(foundryItemId)) {
+    return { status: 'item-missing' };
+  }
+  try {
+    await found.lootActor.deleteEmbeddedDocuments('Item', [foundryItemId]);
+    return { status: 'deleted' };
+  } catch (err) {
+    return { status: 'error', error: err.message };
+  }
+}
+
+/* --------------------------------------------------------------------
+   "Manage Loot" — D&D Amigos menu item, open to everyone. A full view
+   of the site's Party Loot ledger in one popup,
+   styled and laid out like its counterpart on the website itself: a
+   real table (Description/Qty/Value/Notes), a running Total Party
+   Wealth line, and a "+ Add Loot" button that opens an editable row at
+   the top rather than a separate form — matching pages/loot.js's own
+   interaction exactly, and covering both adding and managing loot in
+   one place now, so there's no separate Add Loot dialog anymore. Any
+   line linked to this world's shared Loot actor stays in sync on
+   add/edit/delete too.
+-------------------------------------------------------------------- */
+
+/**
+ * Both the edit and delete branches below report their Foundry-actor
+ * sync result the same four-way way (success / the specific item was
+ * missing / an error / nothing to sync) — this just maps that one
+ * shared shape onto whichever set of message keys the caller passes,
+ * instead of repeating the same if/else chain twice.
+ */
+function notifyLootActorSyncResult(result, messages) {
+  if (result.status === 'updated' || result.status === 'deleted') {
+    ui.notifications.info(game.i18n.localize(messages.success));
+  } else if (result.status === 'item-missing') {
+    ui.notifications.info(game.i18n.localize(messages.itemMissing));
+  } else if (result.status === 'error') {
+    ui.notifications.warn(game.i18n.format(messages.failed, { error: result.error }));
+  } else {
+    ui.notifications.info(game.i18n.localize(messages.siteOnly));
+  }
+}
+
+let lootFontsLoaded = false;
+
+/**
+ * Injects the Cinzel/EB Garamond Google Fonts stylesheet Manage Loot's
+ * CSS references — lazily, on first open, rather than an @import in
+ * module.css that would fetch it on every session load whether or not
+ * anyone ever opens this dialog. Idempotent: safe to call every time
+ * openManageLootDialog() runs, only actually does anything once.
+ */
+function ensureLootFontsLoaded() {
+  if (lootFontsLoaded) return;
+  lootFontsLoaded = true;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = 'https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap';
+  document.head.appendChild(link);
+}
+
+async function openManageLootDialog() {
+  if (!isConfigured()) {
+    ui.notifications.warn(game.i18n.localize('DNDAMIGOS.ActorSheet.NotConfigured'));
+    return;
+  }
+  ensureLootFontsLoaded();
+
+  const journalId = game.settings.get(MODULE_ID, 'journalId');
+  let info;
+  try {
+    info = await apiRequest(`campaign-info.php?journal_id=${journalId}`);
+  } catch (err) {
+    ui.notifications.error(game.i18n.format('DNDAMIGOS.Error.Generic', { error: err.message }));
+    return;
+  }
+
+  const items = info.loot.slice();
+  // An item id, or 'new' for an unsaved row inserted at the top by the
+  // "+ Add Loot" button — mirrors pages/loot.js's own editingId model.
+  let editingId = null;
+
+  const esc = (s) => foundry.utils.escapeHTML(s ?? '');
+
+  // Matches api/loot/list.php's total_value exactly: a straight sum of
+  // each line's value_gp, not value_gp × quantity, so the number here
+  // always agrees with what the site shows.
+  const computeTotal = () => items.reduce((sum, i) => sum + (Number(i.value_gp) || 0), 0);
+
+  const renderEditRow = (item) => `
+    <tr class="dnd-amigos-loot-row" data-id="${item ? item.id : ''}">
+      <td><input type="text" class="ml-edit-description" placeholder="${game.i18n.localize('DNDAMIGOS.ManageLoot.DescriptionPlaceholder')}" value="${item ? esc(item.description) : ''}"></td>
+      <td><input type="number" class="ml-edit-quantity" min="1" max="999" value="${item ? item.quantity : 1}"></td>
+      <td><input type="number" class="ml-edit-value" min="0" placeholder="—" value="${item && item.value_gp !== null && item.value_gp !== undefined ? item.value_gp : ''}"></td>
+      <td><input type="text" class="ml-edit-notes" placeholder="optional" value="${item && item.notes ? esc(item.notes) : ''}"></td>
+      <td class="dnd-amigos-loot-actions">
+        <button type="button" class="dnd-amigos-loot-save-btn">${game.i18n.localize('DNDAMIGOS.ManageLoot.Save')}</button>
+        <button type="button" class="dnd-amigos-loot-cancel-btn">${game.i18n.localize('Cancel')}</button>
+      </td>
+    </tr>
+  `;
+
+  const renderDisplayRow = (item) => {
+    const valueStr = item.value_gp !== null && item.value_gp !== undefined ? item.value_gp : '—';
+    return `
+      <tr class="dnd-amigos-loot-row" data-id="${item.id}">
+        <td>${esc(item.description)}</td>
+        <td>${item.quantity}</td>
+        <td>${valueStr}</td>
+        <td class="dnd-amigos-loot-notes">${item.notes ? esc(item.notes) : ''}</td>
+        <td class="dnd-amigos-loot-actions">
+          <button type="button" class="dnd-amigos-loot-edit-btn">${game.i18n.localize('DNDAMIGOS.ManageLoot.Edit')}</button>
+          <button type="button" class="dnd-amigos-loot-delete-btn">${game.i18n.localize('DNDAMIGOS.ManageLoot.Delete')}</button>
+        </td>
+      </tr>
+    `;
+  };
+
+  new Dialog({
+    title: game.i18n.localize('DNDAMIGOS.ManageLoot.Title'),
+    content: `
+      <div class="dnd-amigos-loot-scroll">
+        <p class="dnd-amigos-loot-total">${game.i18n.localize('DNDAMIGOS.ManageLoot.TotalWealth')} <strong class="dnd-amigos-loot-total-value"></strong></p>
+        <div class="dnd-amigos-loot-table-wrap">
+          <table class="dnd-amigos-loot-table">
+            <thead>
+              <tr>
+                <th>${game.i18n.localize('DNDAMIGOS.ManageLoot.DescriptionHeader')}</th>
+                <th>${game.i18n.localize('DNDAMIGOS.ManageLoot.QtyHeader')}</th>
+                <th>${game.i18n.localize('DNDAMIGOS.ManageLoot.ValueHeader')}</th>
+                <th>${game.i18n.localize('DNDAMIGOS.ManageLoot.NotesHeader')}</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody class="dnd-amigos-manage-loot-list"></tbody>
+          </table>
+        </div>
+        <button type="button" class="dnd-amigos-loot-add-btn">${game.i18n.localize('DNDAMIGOS.ManageLoot.AddButton')}</button>
+      </div>
+    `,
+    buttons: { close: { label: game.i18n.localize('Close') } },
+    render: (html) => {
+      const listEl = html.find('.dnd-amigos-manage-loot-list');
+      const totalEl = html.find('.dnd-amigos-loot-total-value');
+
+      const renderList = () => {
+        totalEl.text(`${computeTotal()} gp`);
+        if (items.length === 0 && editingId !== 'new') {
+          listEl.html(`<tr class="dnd-amigos-loot-empty-row"><td colspan="5"><em>${game.i18n.localize('DNDAMIGOS.ManageLoot.Empty')}</em></td></tr>`);
+          return;
+        }
+        const rows = items.map((item) => (item.id === editingId ? renderEditRow(item) : renderDisplayRow(item)));
+        if (editingId === 'new') rows.unshift(renderEditRow(null));
+        listEl.html(rows.join(''));
+      };
+      renderList();
+
+      // Matches the site's own "+ Add Loot" behavior exactly: insert an
+      // editable row at the top of the table instead of opening a
+      // separate form.
+      html.find('.dnd-amigos-loot-add-btn').on('click', () => {
+        if (editingId === 'new') return;
+        editingId = 'new';
+        renderList();
+        listEl.find('.ml-edit-description').first().trigger('focus');
+      });
+
+      listEl.on('click', async (ev) => {
+        const row = ev.target.closest('.dnd-amigos-loot-row');
+        if (!row) return;
+        const rawId = row.dataset.id;
+        const item = rawId ? items.find((i) => i.id === Number(rawId)) : null;
+
+        if (ev.target.classList.contains('dnd-amigos-loot-edit-btn')) {
+          editingId = item.id;
+          renderList();
+        } else if (ev.target.classList.contains('dnd-amigos-loot-cancel-btn')) {
+          editingId = null;
+          renderList();
+        } else if (ev.target.classList.contains('dnd-amigos-loot-delete-btn')) {
+          const confirmed = await Dialog.confirm({
+            title: game.i18n.localize('DNDAMIGOS.ManageLoot.ConfirmDeleteTitle'),
+            content: `<p>${game.i18n.format('DNDAMIGOS.ManageLoot.ConfirmDeleteBody', { description: item.description })}</p>`,
+          });
+          if (!confirmed) return;
+
+          let foundryItemId;
+          try {
+            const res = await apiRequest('delete-loot.php', { method: 'POST', body: { id: item.id } });
+            foundryItemId = res.foundry_item_id;
+          } catch (err) {
+            ui.notifications.error(game.i18n.format('DNDAMIGOS.Error.Generic', { error: err.message }));
+            return;
+          }
+
+          items.splice(items.indexOf(item), 1);
+          renderList();
+
+          const deleteMessages = {
+            success: 'DNDAMIGOS.ManageLoot.DeletedBoth',
+            itemMissing: 'DNDAMIGOS.ManageLoot.DeletedFoundryItemMissing',
+            failed: 'DNDAMIGOS.ManageLoot.DeletedFoundryFailed',
+            siteOnly: 'DNDAMIGOS.ManageLoot.DeletedSiteOnly',
+          };
+          if (foundryItemId) {
+            notifyLootActorSyncResult(await deleteLootItemFromFoundryActor(foundryItemId), deleteMessages);
+          } else {
+            ui.notifications.info(game.i18n.localize(deleteMessages.siteOnly));
+          }
+        } else if (ev.target.classList.contains('dnd-amigos-loot-save-btn')) {
+          const description = row.querySelector('.ml-edit-description').value.trim();
+          if (!description) return;
+          const quantity = Number(row.querySelector('.ml-edit-quantity').value) || 1;
+          const valueRaw = row.querySelector('.ml-edit-value').value;
+          const valueGp = valueRaw ? Number(valueRaw) : null;
+          const notes = row.querySelector('.ml-edit-notes').value.trim();
+
+          if (!item) {
+            // The unsaved "new" row — same identity requirement as the
+            // standalone Add Loot dialog, since this also credits a member.
+            const myUserId = getMyUserId();
+            if (!myUserId) {
+              ui.notifications.warn(game.i18n.localize('DNDAMIGOS.AddLoot.NoIdentityWarning'));
+              return;
+            }
+
+            let siteItem;
+            try {
+              const res = await apiRequest('add-loot.php', {
+                method: 'POST',
+                body: { journal_id: journalId, user_id: myUserId, description, quantity, value_gp: valueGp, notes: notes || null },
+              });
+              siteItem = res.item;
+            } catch (err) {
+              ui.notifications.error(game.i18n.format('DNDAMIGOS.Error.Generic', { error: err.message }));
+              return;
+            }
+
+            editingId = null;
+            items.unshift(siteItem);
+            renderList();
+
+            const foundryResult = await addLootItemToFoundryActor(description, quantity, valueGp, notes);
+            if (foundryResult.status === 'added') {
+              ui.notifications.info(game.i18n.format('DNDAMIGOS.AddLoot.SuccessBoth', { description }));
+              await linkFoundryItemToSiteLoot(siteItem?.id, foundryResult.foundryItemId);
+              siteItem.foundry_item_id = foundryResult.foundryItemId;
+            } else if (foundryResult.status === 'no-actor-configured') {
+              ui.notifications.info(game.i18n.format('DNDAMIGOS.AddLoot.Success', { description }));
+            } else if (foundryResult.status === 'actor-missing') {
+              ui.notifications.warn(game.i18n.format('DNDAMIGOS.AddLoot.SuccessSiteOnlyMissingActor', { description }));
+            } else {
+              ui.notifications.warn(game.i18n.format('DNDAMIGOS.AddLoot.SuccessSiteOnlyFoundryFailed', { description, error: foundryResult.error }));
+            }
+            return;
+          }
+
+          try {
+            const res = await apiRequest('update-loot.php', {
+              method: 'POST',
+              body: { id: item.id, description, quantity, value_gp: valueGp, notes: notes || null },
+            });
+            Object.assign(item, res.item);
+          } catch (err) {
+            ui.notifications.error(game.i18n.format('DNDAMIGOS.Error.Generic', { error: err.message }));
+            return;
+          }
+
+          editingId = null;
+          renderList();
+
+          const updateMessages = {
+            success: 'DNDAMIGOS.ManageLoot.UpdatedBoth',
+            itemMissing: 'DNDAMIGOS.ManageLoot.UpdatedFoundryItemMissing',
+            failed: 'DNDAMIGOS.ManageLoot.UpdatedFoundryFailed',
+            siteOnly: 'DNDAMIGOS.ManageLoot.UpdatedSiteOnly',
+          };
+          if (item.foundry_item_id) {
+            notifyLootActorSyncResult(
+              await updateLootItemOnFoundryActor(item.foundry_item_id, description, quantity, valueGp, notes),
+              updateMessages
+            );
+          } else {
+            ui.notifications.info(game.i18n.localize(updateMessages.siteOnly));
+          }
+        }
+      });
+    },
+  }, { width: 560 }).render(true);
+}
+
+/* --------------------------------------------------------------------
+   "Import from D&D Amigos" — D&D Amigos menu item, GM only (creates
+   real JournalEntry world documents, which players can't by default).
+   Pulls Places/NPCs/Loot in as Journal Entries and shows the current
+   user's E.Y.F.F.O. mini-game stats, if any.
+-------------------------------------------------------------------- */
+
+async function importCampaignInfo() {
+  if (!isConfigured()) {
+    ui.notifications.warn(game.i18n.localize('DNDAMIGOS.ActorSheet.NotConfigured'));
+    return;
+  }
+
+  const journalId = game.settings.get(MODULE_ID, 'journalId');
+  ui.notifications.info(game.i18n.localize('DNDAMIGOS.Import.Working'));
+
+  let info;
+  try {
+    info = await apiRequest(`campaign-info.php?journal_id=${journalId}`);
+  } catch (err) {
+    ui.notifications.error(game.i18n.format('DNDAMIGOS.Error.Generic', { error: err.message }));
+    return;
+  }
+
+  // NPCs and Places: add what is new, refresh what you have not touched, never overwrite your own work.
+  try {
+    ui.notifications.info(describePull(await pullLore(info)));
+  } catch (err) {
+    ui.notifications.error(game.i18n.format('DNDAMIGOS.Error.Generic', { error: err.message }));
+  }
+
+  await upsertJournalFromList('D&D Amigos: Loot', info.loot, (item) => ({
+    name: `${item.description} ${item.quantity > 1 ? `x${item.quantity}` : ''}`.trim(),
+    text: { content: `<p>${item.value_gp ? `Value: ${item.value_gp} gp<br>` : ''}${foundry.utils.escapeHTML(item.notes || '')}</p>` },
+  }));
+
+  // E.Y.F.F.O. stats for the current user, shown directly rather than
+  // written into a journal entry — it's a personal snapshot, not
+  // shared campaign lore. Needs the site's numeric user id, not
+  // game.user.id (Foundry's own internal id for the current user,
+  // which persona.php has no way to make sense of) — that's what the
+  // "My D&D Amigos Identity" client setting is for.
+  const myUserId = getMyUserId();
+  if (!myUserId) {
+    ui.notifications.info(game.i18n.localize('DNDAMIGOS.Import.NoIdentity'));
+  } else {
+    try {
+      const personaData = await apiRequest(`persona.php?user_id=${myUserId}`);
+      if (personaData.has_persona) {
+        const p = personaData.persona;
+        new Dialog({
+          title: game.i18n.localize('DNDAMIGOS.Import.Title'),
+          content: `
+            <p><strong>${foundry.utils.escapeHTML(p.name)}</strong> — Level ${p.level}</p>
+            <p>HP ${p.hp_current}/${p.hp_max} · Gold ${p.gold} · Turns ${p.turns_remaining}</p>
+            <p>Attack ${p.attack} · Defense ${p.defense} · Cargo ${p.cargo_capacity}</p>
+          `,
+          buttons: { ok: { label: 'OK' } },
+        }).render(true);
+      } else {
+        ui.notifications.info(game.i18n.localize('DNDAMIGOS.Import.PersonaNone'));
+      }
+    } catch (err) {
+      // Non-fatal — the journal-entry import above already succeeded.
+      ui.notifications.warn(game.i18n.format('DNDAMIGOS.Error.Generic', { error: err.message }));
+    }
+  }
+
+  ui.notifications.info(game.i18n.localize('DNDAMIGOS.Import.Done'));
+}
+
+/**
+ * Creates (or replaces the pages of) one Journal Entry named `title`,
+ * with one Journal Entry Page per item in `items`, using `toPage` to
+ * turn a site record into a page's {name, text} shape.
+ */
+async function upsertJournalFromList(title, items, toPage) {
+  if (!items.length) return;
+
+  const pages = items.map((item) => {
+    const page = toPage(item);
+    return { name: page.name, type: 'text', text: page.text };
+  });
+
+  const existing = game.journal.find((j) => j.name === title);
+  if (existing) {
+    await existing.deleteEmbeddedDocuments('JournalEntryPage', existing.pages.map((p) => p.id));
+    await existing.createEmbeddedDocuments('JournalEntryPage', pages);
+  } else {
+    await JournalEntry.create({ name: title, pages });
+  }
+}
