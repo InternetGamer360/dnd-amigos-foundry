@@ -18,6 +18,8 @@
 // configureLore() (its API helpers and settings), so the two files never
 // import each other.
 
+import { openDialog } from './windows.js';
+
 let deps = null;
 
 export function configureLore(d) {
@@ -31,12 +33,6 @@ const KINDS = {
 
 const esc = (s) => foundry.utils.escapeHTML(String(s ?? ''));
 
-/** A jQuery-wrapped element, whatever Foundry hands a legacy Dialog's render callback. */
-function asJq(html) {
-  if (html && typeof html.find === 'function') return html;
-  const jq = globalThis.jQuery || globalThis.$;
-  return jq(html instanceof HTMLElement ? html : html?.[0]);
-}
 const t = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localize(key));
 
 /* --------------------------------------------------------------------
@@ -340,7 +336,7 @@ export async function openLoreDialog() {
     buttons.push = { label: t('DNDAMIGOS.Lore.PushButton'), callback: () => pushLore() };
   }
 
-  new Dialog({
+  openDialog({
     title: t('DNDAMIGOS.Lore.Title'),
     content: `
       <div class="dnd-amigos-lore">
@@ -352,8 +348,6 @@ export async function openLoreDialog() {
       </div>`,
     buttons,
     render: (html) => {
-      // Dialog hands render() a jQuery object; if a future Foundry hands over a plain element, wrap it.
-      html = asJq(html);
       const listView = html.find('.dnd-amigos-lore-list-view');
       const detailView = html.find('.dnd-amigos-lore-detail-view');
       const results = html.find('.dnd-amigos-lore-results');
@@ -474,5 +468,6 @@ export async function openLoreDialog() {
       input.on('input', () => drawList(input.val()));
       input.trigger('focus');
     },
-  }, { width: 560 }).render(true);
+    width: 560,
+  });
 }

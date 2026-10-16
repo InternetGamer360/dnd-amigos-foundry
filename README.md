@@ -140,7 +140,7 @@ directory, so it ends up as `Data/modules/dnd-amigos-connector/`.)
 
 1. Change `version` in `module.json` (and `compatibility.verified` if you
    tested on a newer Foundry).
-2. Commit, then tag and push: `git tag v1.2.0` and `git push --tags`. The tag
+2. Commit, then tag and push: `git tag v1.3.0` and `git push --tags`. The tag
    must match `module.json`'s version with a leading `v`.
 3. The **Release** workflow (`.github/workflows/release.yml`) builds
    `module.zip`, points the manifest and download URLs at this repository's
@@ -167,7 +167,7 @@ journal's name if everything's correct, or exactly what failed if not.
 
 ## Things worth knowing before relying on this
 
-**New in 1.2.0:** pushing a character now saves the WHOLE actor on the site (every item with quantities and containers, spells, feats, skills, conditions, coins, biography), shown as a readable sheet on the PCs page, and Pull from Site can restore all of it onto an actor. Exercised against the site's endpoints with a hand-built actor, but the restore itself (Foundry's own Import Data path) has not been run in a live world. **New in 1.1.0:** NPCs & Places syncing and shared notes (pull, push, portraits, notes window). The data logic was exercised end to end against the real site endpoints, but the notes window itself was written without a live Foundry to click through, so treat its first real use as the test.
+**New in 1.3.0:** every window now uses Foundry's newer window type (DialogV2) instead of the deprecated Dialog/FormApplication, which removes the deprecation warnings and future-proofs the module. Nothing about what the windows do changed. It was exercised against a stand-in Foundry, not a live world, so if any window misbehaves, turn on **Use legacy windows** in Configure Settings to get the old ones back. **New in 1.2.0:** pushing a character now saves the WHOLE actor on the site (every item with quantities and containers, spells, feats, skills, conditions, coins, biography), shown as a readable sheet on the PCs page, and Pull from Site can restore all of it onto an actor. Exercised against the site's endpoints with a hand-built actor, but the restore itself (Foundry's own Import Data path) has not been run in a live world. **New in 1.1.0:** NPCs & Places syncing and shared notes (pull, push, portraits, notes window). The data logic was exercised end to end against the real site endpoints, but the notes window itself was written without a live Foundry to click through, so treat its first real use as the test.
 
 This has been in real use by the group since v0.2.1 — sync (pull,
 push, and create), Add/Manage Loot, Post Session Update, Look Up,
@@ -200,7 +200,7 @@ on top of the confirmed core above:
   `scripts/main.js`) — replacing what used to be several separate
   sidebar buttons with one that opens a Dialog listing them instead,
   including a "How to Use This Module" reference at the top
-  (`openHelpDialog()`). Built on the same `Dialog` API the rest of the
+  (`openHelpDialog()`). Built on the same window helper (`scripts/windows.js`) the rest of the
   module already uses.
 - **The Sync button's label** — renamed to the direction-neutral "D&D
   Amigos Sync" after real players found "Sync from D&D Amigos"
@@ -229,12 +229,12 @@ detail.
    falling back to `.directory-header`. Foundry's sidebar markup has
    changed slightly across versions; if the button doesn't show up (or
    lands somewhere awkward), that selector is the thing to adjust.
-3. **The identity dropdown's Handlebars template**
-   (`templates/identity-settings.html`) uses Foundry's built-in
-   `{{selectOptions}}` helper to build the `<select>` from
-   `members-list.php`'s response — a long-standing core helper, but
-   worth checking first if that dropdown ever renders empty despite a
-   working connection.
+3. **The window types** — every window goes through `scripts/windows.js`,
+   which uses Foundry's newer `DialogV2` and falls back to the old `Dialog`
+   if a new-style window fails to build. If a window ever won't open or looks
+   broken on a future Foundry, the per-browser setting **Use legacy windows**
+   (Configure Settings → D&D Amigos Connector) switches back to the old
+   type until the module catches up.
 
 `module.json`'s `compatibility.minimum`/`verified` is currently `12`/
 `14`, matching the group's actual Foundry instance — adjust if that
@@ -242,4 +242,4 @@ ever changes.
 
 Everything else — settings storage, the API client, the dialogs, the
 journal-entry import — uses stable, long-standing Foundry APIs
-(`game.settings`, `Dialog`, `JournalEntry`) and should work as written.
+(`game.settings`, `DialogV2`, `JournalEntry`) and should work as written.

@@ -8,6 +8,7 @@
 // the site on its own.
 
 import { configureLore, pullLore, describePull, pushLore, openLoreDialog } from './lore.js';
+import { openDialog, confirmDialog, MenuWindow } from './windows.js';
 
 const MODULE_ID = 'dnd-amigos-connector';
 
@@ -66,7 +67,7 @@ Hooks.once('init', () => {
     label: 'DNDAMIGOS.SettingsMenu.Label',
     hint: 'DNDAMIGOS.SettingsMenu.Hint',
     icon: 'fa-solid fa-link',
-    type: ConnectionSettingsForm,
+    type: ConnectionSettingsMenu,
     restricted: true,
   });
 
@@ -84,12 +85,22 @@ Hooks.once('init', () => {
     default: 0,
   });
 
+  // Escape hatch: draw the module's windows with Foundry's old Dialog instead of the newer one.
+  game.settings.register(MODULE_ID, 'legacyWindows', {
+    name: 'DNDAMIGOS.Settings.LegacyWindows.Name',
+    hint: 'DNDAMIGOS.Settings.LegacyWindows.Hint',
+    scope: 'client',
+    config: true,
+    type: Boolean,
+    default: false,
+  });
+
   game.settings.registerMenu(MODULE_ID, 'identityMenu', {
     name: 'DNDAMIGOS.IdentityMenu.Name',
     label: 'DNDAMIGOS.IdentityMenu.Label',
     hint: 'DNDAMIGOS.IdentityMenu.Hint',
     icon: 'fa-solid fa-id-badge',
-    type: IdentitySettingsForm,
+    type: IdentitySettingsMenu,
     restricted: false,
   });
 });
@@ -121,7 +132,7 @@ function getMyUserId() {
 Hooks.once('ready', () => {
   if (!game.user.isGM || isConfigured()) return;
 
-  new Dialog({
+  openDialog({
     title: 'D&D Amigos Connector — Setup Needed',
     content: `
       <p>This module isn't connected to the D&D Amigos website yet. To finish setup:</p>
@@ -146,12 +157,13 @@ Hooks.once('ready', () => {
       open: {
         label: 'Open Connection Settings',
         icon: '<i class="fa-solid fa-link"></i>',
-        callback: () => new ConnectionSettingsForm().render(true),
+        callback: () => openConnectionSettings(),
       },
       later: { label: 'Later' },
     },
     default: 'open',
-  }, { width: 480 }).render(true);
+    width: 480,
+  });
 });
 
 /* --------------------------------------------------------------------
@@ -246,107 +258,153 @@ async function apiUploadFile(path, formData) {
 }
 
 /* --------------------------------------------------------------------
-   Settings form — a plain FormApplication with its own "Test Connection"
-   button, so a GM can confirm the URL/key/journal id are all correct
-   before relying on them anywhere else.
+   Settings windows — opened from Configure Settings. Connection has its
+   own "Test Connection" button, so a GM can confirm the URL/key/journal id
+   are all correct before relying on them anywhere else. Identity is
+   client-scoped and open to every player (not just the GM): pick which
+   D&D Amigos member you are, from a plain dropdown of site members, so
+   loot/session-post actions get credited correctly.
 -------------------------------------------------------------------- */
 
-class ConnectionSettingsForm extends FormApplication {
-  static get defaultOptions() {
-    return foundry.utils.mergeObject(super.defaultOptions, {
-      id: 'dnd-amigos-connection-settings',
-      title: game.i18n.localize('DNDAMIGOS.SettingsMenu.Name'),
-      template: `modules/${MODULE_ID}/templates/connection-settings.html`,
-      width: 480,
-      closeOnSubmit: true,
-    });
-  }
+const attr = (value) => foundry.utils.escapeHTML(String(value ?? ''));
 
-  getData() {
-    // game.actors is already loaded locally — no fetch needed to list
-    // this world's Loot-type actors, unlike everything else in this
-    // form which reads from the site.
-    const lootActors = game.actors
-      .filter((a) => a.type === 'loot')
-      .map((a) => ({ value: a.id, label: a.name }));
+function openConnectionSettings() {
+  const t = (key) => game.i18n.localize(key);
+  // game.actors is already loaded locally — no fetch needed to list this
+  // world's Loot-type actors, unlike everything else here, which reads from the site.
+  const lootActorId = game.settings.get(MODULE_ID, 'lootActorId');
+  const lootOptions = game.actors
+    .filter((a) => a.type === 'loot')
+    .map((a) => `<option value="${attr(a.id)}"${a.id === lootActorId ? ' selected' : ''}>${attr(a.name)}</option>`)
+    .join('');
 
-    return {
-      siteUrl: game.settings.get(MODULE_ID, 'siteUrl'),
-      apiKey: game.settings.get(MODULE_ID, 'apiKey'),
-      journalId: game.settings.get(MODULE_ID, 'journalId'),
-      lootActorId: game.settings.get(MODULE_ID, 'lootActorId'),
-      lootActors,
-    };
-  }
+  openDialog({
+    title: t('DNDAMIGOS.SettingsMenu.Name'),
+    width: 480,
+    content: `
+      <div class="form-group">
+        <label>${t('DNDAMIGOS.Settings.SiteUrl.Name')}</label>
+        <input type="text" name="siteUrl" value="${attr(game.settings.get(MODULE_ID, 'siteUrl'))}" placeholder="https://dndamigos.com">
+        <p class="notes">${t('DNDAMIGOS.Settings.SiteUrl.Hint')}</p>
+      </div>
+      <div class="form-group">
+        <label>${t('DNDAMIGOS.Settings.ApiKey.Name')}</label>
+        <input type="password" name="apiKey" value="${attr(game.settings.get(MODULE_ID, 'apiKey'))}">
+        <p class="notes">${t('DNDAMIGOS.Settings.ApiKey.Hint')}</p>
+      </div>
+      <div class="form-group">
+        <label>${t('DNDAMIGOS.Settings.JournalId.Name')}</label>
+        <input type="number" name="journalId" value="${attr(game.settings.get(MODULE_ID, 'journalId'))}" min="1" step="1">
+        <p class="notes">${t('DNDAMIGOS.Settings.JournalId.Hint')}</p>
+      </div>
+      <div class="form-group">
+        <label>${t('DNDAMIGOS.Settings.LootActorId.Name')}</label>
+        <select name="lootActorId" style="width:100%;">
+          <option value="">&mdash; None &mdash;</option>
+          ${lootOptions}
+        </select>
+        <p class="notes">${t('DNDAMIGOS.Settings.LootActorId.Hint')}</p>
+      </div>
+      <div class="form-group">
+        <button type="button" data-action="test-connection"><i class="fa-solid fa-plug"></i> Test Connection</button>
+        <p class="dnd-amigos-test-result notes"></p>
+      </div>
+    `,
+    buttons: {
+      save: {
+        label: 'Save',
+        icon: '<i class="fa-solid fa-save"></i>',
+        callback: async (html) => {
+          await game.settings.set(MODULE_ID, 'siteUrl', String(html.find('[name="siteUrl"]').val() || '').replace(/\/+$/, ''));
+          await game.settings.set(MODULE_ID, 'apiKey', html.find('[name="apiKey"]').val() || '');
+          await game.settings.set(MODULE_ID, 'journalId', Number(html.find('[name="journalId"]').val()) || 0);
+          await game.settings.set(MODULE_ID, 'lootActorId', html.find('[name="lootActorId"]').val() || '');
+        },
+      },
+      cancel: { label: t('Cancel') },
+    },
+    default: 'save',
+    render: (html) => {
+      html.find('[data-action="test-connection"]').on('click', async () => {
+        const siteUrl = html.find('[name="siteUrl"]').val();
+        const apiKey = html.find('[name="apiKey"]').val();
+        const journalId = Number(html.find('[name="journalId"]').val());
+        const resultEl = html.find('.dnd-amigos-test-result');
 
-  activateListeners(html) {
-    super.activateListeners(html);
-    html.find('[data-action="test-connection"]').on('click', async () => {
-      const siteUrl = html.find('[name="siteUrl"]').val();
-      const apiKey = html.find('[name="apiKey"]').val();
-      const journalId = Number(html.find('[name="journalId"]').val());
-      const resultEl = html.find('.dnd-amigos-test-result');
+        // Test with whatever's currently typed, not necessarily saved yet.
+        await game.settings.set(MODULE_ID, 'siteUrl', siteUrl);
+        await game.settings.set(MODULE_ID, 'apiKey', apiKey);
+        await game.settings.set(MODULE_ID, 'journalId', journalId);
 
-      // Test with whatever's currently typed, not necessarily saved yet.
-      await game.settings.set(MODULE_ID, 'siteUrl', siteUrl);
-      await game.settings.set(MODULE_ID, 'apiKey', apiKey);
-      await game.settings.set(MODULE_ID, 'journalId', journalId);
-
-      try {
-        const data = await apiRequest(`campaign-info.php?journal_id=${journalId}`);
-        resultEl.text(game.i18n.format('DNDAMIGOS.Error.TestConnectionOk', { name: data.journal.name }));
-        resultEl.css('color', 'green');
-      } catch (err) {
-        resultEl.text(game.i18n.format('DNDAMIGOS.Error.TestConnectionFailed', { error: err.message }));
-        resultEl.css('color', 'red');
-      }
-    });
-  }
-
-  async _updateObject(event, formData) {
-    await game.settings.set(MODULE_ID, 'siteUrl', String(formData.siteUrl || '').replace(/\/+$/, ''));
-    await game.settings.set(MODULE_ID, 'apiKey', formData.apiKey || '');
-    await game.settings.set(MODULE_ID, 'journalId', Number(formData.journalId) || 0);
-    await game.settings.set(MODULE_ID, 'lootActorId', formData.lootActorId || '');
-  }
+        try {
+          const data = await apiRequest(`campaign-info.php?journal_id=${journalId}`);
+          resultEl.text(game.i18n.format('DNDAMIGOS.Error.TestConnectionOk', { name: data.journal.name }));
+          resultEl.css('color', 'green');
+        } catch (err) {
+          resultEl.text(game.i18n.format('DNDAMIGOS.Error.TestConnectionFailed', { error: err.message }));
+          resultEl.css('color', 'red');
+        }
+      });
+    },
+  });
 }
 
-/* --------------------------------------------------------------------
-   Identity form — client-scoped, open to every player (not just the
-   GM): pick which D&D Amigos member you are, from a plain dropdown of
-   site members, so loot/session-post actions get credited correctly.
--------------------------------------------------------------------- */
+async function openIdentitySettings() {
+  const t = (key) => game.i18n.localize(key);
+  const currentId = getMyUserId();
 
-class IdentitySettingsForm extends FormApplication {
-  static get defaultOptions() {
-    return foundry.utils.mergeObject(super.defaultOptions, {
-      id: 'dnd-amigos-identity-settings',
-      title: game.i18n.localize('DNDAMIGOS.IdentityMenu.Name'),
-      template: `modules/${MODULE_ID}/templates/identity-settings.html`,
-      width: 420,
-      closeOnSubmit: true,
-    });
-  }
-
-  async getData() {
-    const currentId = getMyUserId();
-
-    if (!isConfigured()) {
-      return { choices: [], currentId, error: game.i18n.localize('DNDAMIGOS.Error.NotConfigured') };
-    }
-
+  let choices = [];
+  let error = null;
+  if (!isConfigured()) {
+    error = t('DNDAMIGOS.Error.NotConfigured');
+  } else {
     try {
       const data = await apiRequest('members-list.php');
-      const choices = data.members.map((m) => ({ value: m.id, label: m.display_name }));
-      return { choices, currentId, error: null };
+      choices = data.members;
     } catch (err) {
-      return { choices: [], currentId, error: err.message };
+      error = err.message;
     }
   }
 
-  async _updateObject(event, formData) {
-    await game.settings.set(MODULE_ID, 'myUserId', Number(formData.userId) || 0);
-  }
+  const body = error
+    ? `<p class="notes" style="color:#a94442;">${attr(error)}</p>`
+    : `
+      <div class="form-group">
+        <label>${t('DNDAMIGOS.Settings.MyUserId.Name')}</label>
+        <select name="userId" style="width:100%;">
+          <option value="0">${t('DNDAMIGOS.Settings.MyUserId.None')}</option>
+          ${choices.map((m) => `<option value="${attr(m.id)}"${Number(m.id) === currentId ? ' selected' : ''}>${attr(m.display_name)}</option>`).join('')}
+        </select>
+        <p class="notes">${t('DNDAMIGOS.Settings.MyUserId.Hint')}</p>
+      </div>`;
+
+  openDialog({
+    title: t('DNDAMIGOS.IdentityMenu.Name'),
+    width: 420,
+    content: body,
+    buttons: {
+      ...(error ? {} : {
+        save: {
+          label: 'Save',
+          icon: '<i class="fa-solid fa-save"></i>',
+          callback: async (html) => {
+            await game.settings.set(MODULE_ID, 'myUserId', Number(html.find('[name="userId"]').val()) || 0);
+          },
+        },
+      }),
+      cancel: { label: t(error ? 'Close' : 'Cancel') },
+    },
+    default: error ? 'cancel' : 'save',
+  });
+}
+
+// What Configure Settings builds for the two menu buttons; each just opens its dialog above.
+class ConnectionSettingsMenu extends MenuWindow {
+  static open() { openConnectionSettings(); }
+}
+
+class IdentitySettingsMenu extends MenuWindow {
+  static open() { openIdentitySettings(); }
 }
 
 /* --------------------------------------------------------------------
@@ -367,6 +425,19 @@ Hooks.on('getActorSheetHeaderButtons', (sheet, buttons) => {
   });
 });
 
+// The same button for sheets built on the newer window type, whose header menu is a list of controls
+// (an `action` the sheet runs, or an `onClick` of our own). Harmless where no sheet fires this hook.
+Hooks.on('getHeaderControlsActorSheetV2', (sheet, controls) => {
+  if (sheet.actor?.type !== 'character') return;
+  if (controls.some((c) => c.action === 'dndAmigosSync')) return;
+  controls.unshift({
+    action: 'dndAmigosSync',
+    label: 'DNDAMIGOS.ActorSheet.HeaderButton',
+    icon: 'fa-solid fa-arrows-rotate',
+    onClick: () => syncActorFromVault(sheet.actor),
+  });
+});
+
 async function syncActorFromVault(actor) {
   if (!isConfigured()) {
     ui.notifications.warn(game.i18n.localize('DNDAMIGOS.ActorSheet.NotConfigured'));
@@ -377,17 +448,17 @@ async function syncActorFromVault(actor) {
 
   if (linkedId) {
     const linkedName = actor.getFlag(MODULE_ID, 'characterName') || actor.name;
-    new Dialog({
+    openDialog({
       title: game.i18n.localize('DNDAMIGOS.ActorSheet.DirectionTitle'),
-      content: `<p>${game.i18n.format('DNDAMIGOS.ActorSheet.DirectionBody', { name: linkedName })}</p>`,
+      content: `<p>${game.i18n.format('DNDAMIGOS.ActorSheet.DirectionBody', { name: attr(linkedName) })}</p>`,
       buttons: {
         pull: {
           label: game.i18n.localize('DNDAMIGOS.ActorSheet.PullButton'),
           icon: '<i class="fa-solid fa-cloud-arrow-down"></i>',
           callback: async () => {
-            const confirmed = await Dialog.confirm({
+            const confirmed = await confirmDialog({
               title: game.i18n.localize('DNDAMIGOS.ActorSheet.ReSyncTitle'),
-              content: `<p>${game.i18n.format('DNDAMIGOS.ActorSheet.ReSyncBody', { name: linkedName })}</p>`,
+              content: `<p>${game.i18n.format('DNDAMIGOS.ActorSheet.ReSyncBody', { name: attr(linkedName) })}</p>`,
             });
             if (!confirmed) return;
             await applyCharacterToActor(actor, linkedId);
@@ -397,9 +468,9 @@ async function syncActorFromVault(actor) {
           label: game.i18n.localize('DNDAMIGOS.ActorSheet.PushButton'),
           icon: '<i class="fa-solid fa-cloud-arrow-up"></i>',
           callback: async () => {
-            const confirmed = await Dialog.confirm({
+            const confirmed = await confirmDialog({
               title: game.i18n.localize('DNDAMIGOS.ActorSheet.PushConfirmTitle'),
-              content: `<p>${game.i18n.format('DNDAMIGOS.ActorSheet.PushConfirmBody', { name: linkedName })}</p>`,
+              content: `<p>${game.i18n.format('DNDAMIGOS.ActorSheet.PushConfirmBody', { name: attr(linkedName) })}</p>`,
             });
             if (!confirmed) return;
             await pushActorToVault(actor, linkedId);
@@ -408,7 +479,7 @@ async function syncActorFromVault(actor) {
         cancel: { label: game.i18n.localize('Cancel') },
       },
       default: 'pull',
-    }).render(true);
+    });
     return;
   }
 
@@ -430,7 +501,7 @@ async function syncActorFromVault(actor) {
     .map((c) => `<option value="${c.id}">${foundry.utils.escapeHTML(c.name)} — ${foundry.utils.escapeHTML(c.player_display || '')}</option>`)
     .join('');
 
-  new Dialog({
+  openDialog({
     title: game.i18n.localize('DNDAMIGOS.ActorSheet.PickerTitle'),
     content: `
       <p>${game.i18n.localize('DNDAMIGOS.ActorSheet.PickerHint')}</p>
@@ -456,7 +527,7 @@ async function syncActorFromVault(actor) {
       cancel: { label: game.i18n.localize('Cancel') },
     },
     default: hasExisting ? 'sync' : 'create',
-  }).render(true);
+  });
 }
 
 async function applyCharacterToActor(actor, characterId) {
@@ -481,7 +552,7 @@ async function applyCharacterToActor(actor, characterId) {
   // The site has the WHOLE character saved: offer to restore all of it, not just the basics.
   if (snapshotMeta) {
     const choice = await new Promise((resolve) => {
-      new Dialog({
+      openDialog({
         title: game.i18n.localize('DNDAMIGOS.ActorSheet.RestoreTitle'),
         content: `<p>${game.i18n.format('DNDAMIGOS.ActorSheet.RestoreBody', { name: foundry.utils.escapeHTML(character.name), date: String(snapshotMeta.taken_at).slice(0, 10) })}</p>`,
         buttons: {
@@ -491,7 +562,7 @@ async function applyCharacterToActor(actor, characterId) {
         },
         default: 'cancel',
         close: () => resolve('cancel'),
-      }).render(true);
+      });
     });
     if (choice === 'cancel') return;
     if (choice === 'all') {
@@ -615,9 +686,9 @@ async function pushActorTokenToVault(actor, characterId, userId) {
 async function offerRecreateAfterMissingCharacter(actor) {
   const missingName = actor.getFlag(MODULE_ID, 'characterName') || actor.name;
 
-  new Dialog({
+  openDialog({
     title: game.i18n.localize('DNDAMIGOS.ActorSheet.MissingTitle'),
-    content: `<p>${game.i18n.format('DNDAMIGOS.ActorSheet.MissingBody', { name: missingName })}</p>`,
+    content: `<p>${game.i18n.format('DNDAMIGOS.ActorSheet.MissingBody', { name: attr(missingName) })}</p>`,
     buttons: {
       create: {
         label: game.i18n.localize('DNDAMIGOS.ActorSheet.CreateNewButton'),
@@ -639,7 +710,7 @@ async function offerRecreateAfterMissingCharacter(actor) {
       cancel: { label: game.i18n.localize('Cancel') },
     },
     default: 'create',
-  }).render(true);
+  });
 }
 
 /**
@@ -872,7 +943,7 @@ function openAmigosMenu() {
     entries.push({ action: 'push-lore', icon: 'fa-upload', labelKey: 'DNDAMIGOS.JournalDirectory.PushLore', onClick: pushLore });
   }
 
-  const dialog = new Dialog({
+  const dialog = openDialog({
     title: game.i18n.localize('DNDAMIGOS.Menu.Title'),
     content: `
       <div class="dnd-amigos-menu-list">
@@ -892,8 +963,8 @@ function openAmigosMenu() {
         });
       });
     },
-  }, { width: 320 });
-  dialog.render(true);
+    width: 320,
+  });
 }
 
 /**
@@ -915,7 +986,7 @@ function openHelpDialog() {
     ['DNDAMIGOS.Help.Identity.Title', 'DNDAMIGOS.Help.Identity.Body'],
   ];
 
-  new Dialog({
+  openDialog({
     title: game.i18n.localize('DNDAMIGOS.Help.Title'),
     content: `
       <div class="dnd-amigos-help">
@@ -928,7 +999,8 @@ function openHelpDialog() {
       </div>
     `,
     buttons: { close: { label: game.i18n.localize('Close') } },
-  }, { width: 480 }).render(true);
+    width: 480,
+  });
 }
 
 Hooks.on('renderJournalDirectory', (app, html) => {
@@ -989,7 +1061,7 @@ function openPostEventDialog() {
     return;
   }
 
-  new Dialog({
+  openDialog({
     title: game.i18n.localize('DNDAMIGOS.PostEvent.Title'),
     content: `
       <div class="form-group">
@@ -1030,7 +1102,7 @@ function openPostEventDialog() {
       cancel: { label: game.i18n.localize('Cancel') },
     },
     default: 'send',
-  }).render(true);
+  });
 }
 
 /* --------------------------------------------------------------------
@@ -1270,7 +1342,7 @@ async function openManageLootDialog() {
     `;
   };
 
-  new Dialog({
+  openDialog({
     title: game.i18n.localize('DNDAMIGOS.ManageLoot.Title'),
     content: `
       <div class="dnd-amigos-loot-scroll">
@@ -1332,9 +1404,9 @@ async function openManageLootDialog() {
           editingId = null;
           renderList();
         } else if (ev.target.classList.contains('dnd-amigos-loot-delete-btn')) {
-          const confirmed = await Dialog.confirm({
+          const confirmed = await confirmDialog({
             title: game.i18n.localize('DNDAMIGOS.ManageLoot.ConfirmDeleteTitle'),
-            content: `<p>${game.i18n.format('DNDAMIGOS.ManageLoot.ConfirmDeleteBody', { description: item.description })}</p>`,
+            content: `<p>${game.i18n.format('DNDAMIGOS.ManageLoot.ConfirmDeleteBody', { description: attr(item.description) })}</p>`,
           });
           if (!confirmed) return;
 
@@ -1440,7 +1512,8 @@ async function openManageLootDialog() {
         }
       });
     },
-  }, { width: 560 }).render(true);
+    width: 560,
+  });
 }
 
 /* --------------------------------------------------------------------
@@ -1493,7 +1566,7 @@ async function importCampaignInfo() {
       const personaData = await apiRequest(`persona.php?user_id=${myUserId}`);
       if (personaData.has_persona) {
         const p = personaData.persona;
-        new Dialog({
+        openDialog({
           title: game.i18n.localize('DNDAMIGOS.Import.Title'),
           content: `
             <p><strong>${foundry.utils.escapeHTML(p.name)}</strong> — Level ${p.level}</p>
@@ -1501,7 +1574,7 @@ async function importCampaignInfo() {
             <p>Attack ${p.attack} · Defense ${p.defense} · Cargo ${p.cargo_capacity}</p>
           `,
           buttons: { ok: { label: 'OK' } },
-        }).render(true);
+        });
       } else {
         ui.notifications.info(game.i18n.localize('DNDAMIGOS.Import.PersonaNone'));
       }
