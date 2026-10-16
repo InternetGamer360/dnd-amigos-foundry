@@ -461,9 +461,11 @@ async function syncActorFromVault(actor) {
 
 async function applyCharacterToActor(actor, characterId) {
   let character;
+  let snapshotMeta = null;
   try {
     const data = await apiRequest(`character.php?character_id=${characterId}`);
     character = data.character;
+    snapshotMeta = data.snapshot || null;
   } catch (err) {
     if (err instanceof DndAmigosApiError && err.status === 404) {
       // The linked Character Vault entry is gone (deleted on the site
@@ -474,6 +476,28 @@ async function applyCharacterToActor(actor, characterId) {
     }
     ui.notifications.error(game.i18n.format('DNDAMIGOS.Error.Generic', { error: err.message }));
     return;
+  }
+
+  // The site has the WHOLE character saved: offer to restore all of it, not just the basics.
+  if (snapshotMeta) {
+    const choice = await new Promise((resolve) => {
+      new Dialog({
+        title: game.i18n.localize('DNDAMIGOS.ActorSheet.RestoreTitle'),
+        content: `<p>${game.i18n.format('DNDAMIGOS.ActorSheet.RestoreBody', { name: foundry.utils.escapeHTML(character.name), date: String(snapshotMeta.taken_at).slice(0, 10) })}</p>`,
+        buttons: {
+          all: { label: game.i18n.localize('DNDAMIGOS.ActorSheet.RestoreAllButton'), icon: '<i class="fa-solid fa-box-open"></i>', callback: () => resolve('all') },
+          stats: { label: game.i18n.localize('DNDAMIGOS.ActorSheet.RestoreStatsButton'), callback: () => resolve('stats') },
+          cancel: { label: game.i18n.localize('Cancel'), callback: () => resolve('cancel') },
+        },
+        default: 'cancel',
+        close: () => resolve('cancel'),
+      }).render(true);
+    });
+    if (choice === 'cancel') return;
+    if (choice === 'all') {
+      await restoreActorFromSnapshot(actor, character);
+      return;
+    }
   }
 
   const update = buildBasicPf2eUpdate(character);
@@ -515,12 +539,14 @@ async function pushActorToVault(actor, characterId) {
     return;
   }
 
-  const payload = { character_id: characterId, user_id: myUserId, ...extractBasicCharacterFromActor(actor) };
+  const payload = { character_id: characterId, user_id: myUserId, ...extractBasicCharacterFromActor(actor), ...snapshotPayload(actor) };
 
   let character;
+  let snapshotResult = null;
   try {
     const data = await apiRequest('update-character.php', { method: 'POST', body: payload });
     character = data.character;
+    snapshotResult = data.snapshot || null;
   } catch (err) {
     ui.notifications.error(game.i18n.format('DNDAMIGOS.Error.Generic', { error: err.message }));
     return;
@@ -533,6 +559,10 @@ async function pushActorToVault(actor, characterId) {
     ui.notifications.warn(game.i18n.format('DNDAMIGOS.ActorSheet.PushedStatsTokenFailed', { name: character.name, error: tokenResult.error }));
   } else {
     ui.notifications.info(game.i18n.format('DNDAMIGOS.ActorSheet.PushedToSite', { name: character.name }));
+  }
+  const snapshotLine = describeSnapshotResult(actor, snapshotResult);
+  if (snapshotLine) {
+    (snapshotResult.saved ? ui.notifications.info : ui.notifications.warn).call(ui.notifications, snapshotLine);
   }
 }
 
@@ -619,6 +649,83 @@ async function offerRecreateAfterMissingCharacter(actor) {
  * attempt to serialize feats/skills/spells, just what a Character
  * Vault row actually has columns for.
  */
+/**
+ * The COMPLETE actor for the Character Vault: everything the actor holds (every item, its
+ * quantities and containers, spells, feats, skills, conditions, coins, biography...), as Foundry
+ * itself would export it, minus the bits that belong to this world rather than the character
+ * (its id, folder, sort order and who may open it). Returns { data, bytes } or { error }.
+ */
+const SNAPSHOT_LIMIT_BYTES = 2900000; // the site refuses anything over 3 MB
+
+function buildActorSnapshot(actor) {
+  const data = actor.toObject();
+  for (const k of ['_id', 'folder', 'sort', 'ownership', '_stats']) delete data[k];
+  const bytes = JSON.stringify(data).length;
+  if (bytes > SNAPSHOT_LIMIT_BYTES) return { error: game.i18n.format('DNDAMIGOS.ActorSheet.SnapshotTooBig', { mb: (bytes / 1048576).toFixed(1) }) };
+  return { data, bytes };
+}
+
+/** Fields every push or create sends alongside the basics so the site can keep the whole character. */
+function snapshotPayload(actor) {
+  const snap = buildActorSnapshot(actor);
+  if (snap.error) {
+    ui.notifications.warn(snap.error);
+    return {};
+  }
+  return {
+    snapshot: snap.data,
+    foundry_version: String(game.version || ''),
+    module_version: String(game.modules.get(MODULE_ID)?.version || ''),
+    system_id: String(game.system?.id || 'pf2e'),
+  };
+}
+
+/** One line about what happened to the full snapshot, from the site's reply. */
+function describeSnapshotResult(actor, result) {
+  if (!result) return '';
+  if (result.saved) return game.i18n.format('DNDAMIGOS.ActorSheet.SnapshotSaved', { items: actor.items.size });
+  return result.error ? game.i18n.format('DNDAMIGOS.ActorSheet.SnapshotFailed', { error: result.error }) : '';
+}
+
+/**
+ * Replaces this actor with the complete character saved on the site, using Foundry's own "Import
+ * Data" path (so embedded items come along), then re-links it to the vault entry. If that path
+ * refuses, falls back to replacing the actor's data and items by hand.
+ */
+async function restoreActorFromSnapshot(actor, character) {
+  let saved;
+  try {
+    saved = await apiRequest(`character-snapshot.php?character_id=${character.id}`);
+  } catch (err) {
+    ui.notifications.error(game.i18n.format('DNDAMIGOS.Error.Generic', { error: err.message }));
+    return false;
+  }
+  const snap = saved.snapshot;
+  if (snap.type !== actor.type) {
+    ui.notifications.error(game.i18n.format('DNDAMIGOS.ActorSheet.RestoreWrongType', { saved: snap.type, actual: actor.type }));
+    return false;
+  }
+  try {
+    await actor.importFromJSON(JSON.stringify(snap));
+  } catch (err) {
+    console.warn(`${MODULE_ID} | importFromJSON refused, replacing the actor's data and items by hand`, err);
+    try {
+      const { items, ...rest } = snap;
+      await actor.update(rest, { diff: false, recursive: false });
+      await actor.deleteEmbeddedDocuments('Item', actor.items.map((i) => i.id));
+      await actor.createEmbeddedDocuments('Item', items, { keepId: true });
+    } catch (err2) {
+      ui.notifications.error(game.i18n.format('DNDAMIGOS.Error.Generic', { error: err2.message }));
+      return false;
+    }
+  }
+  // the import replaces flags too, so the link to the vault entry has to be set again
+  await actor.setFlag(MODULE_ID, 'characterId', character.id);
+  await actor.setFlag(MODULE_ID, 'characterName', character.name);
+  ui.notifications.info(game.i18n.format('DNDAMIGOS.ActorSheet.Restored', { name: character.name, items: actor.items.size }));
+  return true;
+}
+
 function extractBasicCharacterFromActor(actor) {
   const abilities = actor.system?.abilities || {};
   // Character Vault stores a raw ability score, not a modifier — this
@@ -656,12 +763,14 @@ async function createCharacterFromActor(actor) {
   }
 
   const journalId = game.settings.get(MODULE_ID, 'journalId');
-  const payload = { journal_id: journalId, user_id: myUserId, ...extractBasicCharacterFromActor(actor) };
+  const payload = { journal_id: journalId, user_id: myUserId, ...extractBasicCharacterFromActor(actor), ...snapshotPayload(actor) };
 
   let character;
+  let snapshotResult = null;
   try {
     const data = await apiRequest('create-character.php', { method: 'POST', body: payload });
     character = data.character;
+    snapshotResult = data.snapshot || null;
   } catch (err) {
     ui.notifications.error(game.i18n.format('DNDAMIGOS.Error.Generic', { error: err.message }));
     return;
@@ -670,6 +779,10 @@ async function createCharacterFromActor(actor) {
   await actor.setFlag(MODULE_ID, 'characterId', character.id);
   await actor.setFlag(MODULE_ID, 'characterName', character.name);
   ui.notifications.info(game.i18n.format('DNDAMIGOS.ActorSheet.CreatedOnSite', { name: character.name }));
+  const snapshotLine = describeSnapshotResult(actor, snapshotResult);
+  if (snapshotLine) {
+    (snapshotResult.saved ? ui.notifications.info : ui.notifications.warn).call(ui.notifications, snapshotLine);
+  }
 }
 
 /**

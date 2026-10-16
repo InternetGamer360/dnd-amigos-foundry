@@ -2,7 +2,7 @@
   "id": "dnd-amigos-connector",
   "title": "D&D Amigos Connector",
   "description": "Manual, click-to-run sync between this Foundry world and the D&D Amigos website, all from one \"D&D Amigos\" journal sidebar button: pull a Character Vault entry onto an actor sheet, push an actor's current stats and portrait back up to overwrite it (any campaign DM can push too, not just the character's owner), or create one from the actor if it doesn't exist yet; post a session update to the site's journal/Discord; manage the whole Party Loot ledger — add, edit, remove — in a popup styled like the site's own loot table, staying in sync with this world's shared Loot actor too; browse the campaign's NPCs and Places and add shared notes to them; write NPCs and Places here and push them to the site; and import Places/NPCs/Loot/E.Y.F.F.O. stats as journal entries. Nothing here runs automatically — every action is a button you click.",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "compatibility": {
     "minimum": "12",
     "verified": "14.236"

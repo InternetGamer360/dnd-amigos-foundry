@@ -167,7 +167,7 @@ journal's name if everything's correct, or exactly what failed if not.
 
 ## Things worth knowing before relying on this
 
-**New in 1.1.0:** NPCs & Places syncing and shared notes (pull, push, portraits, notes window). The data logic was exercised end to end against the real site endpoints, but the notes window itself was written without a live Foundry to click through, so treat its first real use as the test.
+**New in 1.2.0:** pushing a character now saves the WHOLE actor on the site (every item with quantities and containers, spells, feats, skills, conditions, coins, biography), shown as a readable sheet on the PCs page, and Pull from Site can restore all of it onto an actor. Exercised against the site's endpoints with a hand-built actor, but the restore itself (Foundry's own Import Data path) has not been run in a live world. **New in 1.1.0:** NPCs & Places syncing and shared notes (pull, push, portraits, notes window). The data logic was exercised end to end against the real site endpoints, but the notes window itself was written without a live Foundry to click through, so treat its first real use as the test.
 
 This has been in real use by the group since v0.2.1 — sync (pull,
 push, and create), Add/Manage Loot, Post Session Update, Look Up,

@@ -34,7 +34,7 @@
   "DNDAMIGOS.ActorSheet.ReSyncBody": "This overwrites this actor's current level/HP/abilities with what's on the site right now. Continue?",
   "DNDAMIGOS.ActorSheet.PushConfirmTitle": "Push to D&D Amigos?",
   "DNDAMIGOS.ActorSheet.PushConfirmBody": "This overwrites \"{name}\" on the site with this actor's current level/HP/abilities. Only works if you're the one who owns that character on the site. Continue?",
-  "DNDAMIGOS.ActorSheet.PushedToSite": "Pushed {name}'s current stats and token to the site.",
+  "DNDAMIGOS.ActorSheet.PushedToSite": "Pushed {name}'s stats and token to the site.",
   "DNDAMIGOS.ActorSheet.PushedStatsTokenFailed": "Pushed {name}'s stats to the site, but the token image failed to push: {error}",
   "DNDAMIGOS.ActorSheet.SyncedBasic": "Synced basic stats for {name} from D&D Amigos.",
   "DNDAMIGOS.ActorSheet.SyncedThin": "{name} was imported into the Vault manually (not via Pathbuilder), so only basic stats are available — level, current HP, and ability modifiers.",
@@ -131,5 +131,14 @@
   "DNDAMIGOS.Lore.Pushing": "Pushing NPCs and Places to D&D Amigos…",
   "DNDAMIGOS.Lore.Pushed": "Pushed.",
   "DNDAMIGOS.Lore.NothingToPush": "Nothing to push yet. Add pages to the \"D&D Amigos: NPCs\" or \"D&D Amigos: Places\" journal (or use New NPC / New Place).",
-  "DNDAMIGOS.Lore.PageCreated": "Created \"{name}\". Click the pencil in the journal to write it (rename it, add an italic tagline line, then the description), then use Push to Site."
+  "DNDAMIGOS.Lore.PageCreated": "Created \"{name}\". Click the pencil in the journal to write it (rename it, add an italic tagline line, then the description), then use Push to Site.",
+  "DNDAMIGOS.ActorSheet.SnapshotSaved": "The whole character is saved on the site too: {items} items (inventory, spells, feats and all). You can restore it later with Pull from Site.",
+  "DNDAMIGOS.ActorSheet.SnapshotFailed": "The stats went up, but the full character could not be saved: {error}",
+  "DNDAMIGOS.ActorSheet.SnapshotTooBig": "This character is too big to save in full ({mb} MB; the limit is about 3 MB). Only the stats were sent.",
+  "DNDAMIGOS.ActorSheet.RestoreTitle": "Restore the whole character?",
+  "DNDAMIGOS.ActorSheet.RestoreBody": "The site has all of <strong>{name}</strong> saved (last pushed {date}): inventory, spells, feats, skills and everything else.<br><br><strong>Restore everything</strong> replaces this actor's items and data with that saved copy. <strong>Stats only</strong> just updates level, HP and abilities, and keeps the actor's items as they are.",
+  "DNDAMIGOS.ActorSheet.RestoreAllButton": "Restore everything",
+  "DNDAMIGOS.ActorSheet.RestoreStatsButton": "Stats only",
+  "DNDAMIGOS.ActorSheet.Restored": "Restored {name} from the site: {items} items.",
+  "DNDAMIGOS.ActorSheet.RestoreWrongType": "The saved character is a \"{saved}\" but this actor is a \"{actual}\", so it cannot be restored onto it."
 }
