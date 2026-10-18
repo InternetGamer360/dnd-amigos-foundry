@@ -110,9 +110,26 @@ async function askFromChat(question, isPublic) {
   }
 }
 
+/**
+ * The chat box's message as plain text. Foundry v14's chat input hands the chatMessage hook
+ * HTML ("<p>/nethys ...</p>", "&amp;" for "&", <br> for new lines), and earlier versions plain
+ * text; this reads either the way Foundry's own command parser does.
+ */
+function chatText(message) {
+  const raw = String(message ?? '');
+  if (!/[<&]/.test(raw)) return raw.trim();
+  const template = document.createElement('template');
+  template.innerHTML = raw;
+  template.content.querySelectorAll('br').forEach((br) => br.replaceWith('\n'));
+  template.content.querySelectorAll('p').forEach((p) => p.append('\n'));
+  return template.content.textContent.trim();
+}
+
 // "/nethys question" and "/nethys! question" — handled here and kept out of the normal chat.
+// The hook runs before Foundry parses slash commands, so returning false also stops Foundry
+// from rejecting "/nethys" as an unknown command.
 Hooks.on('chatMessage', (chatLog, text) => {
-  const match = COMMAND.exec(String(text ?? '').trim());
+  const match = COMMAND.exec(chatText(text));
   if (!match) return true;
   const question = (match[2] || '').trim();
   if (!question) {
@@ -147,7 +164,10 @@ function bindShareButton(message, html) {
   });
 }
 Hooks.on('renderChatMessageHTML', bindShareButton);
-Hooks.on('renderChatMessage', bindShareButton);
+// Only v12 needs the old hook; v13+ log a deprecation warning just for registering it.
+Hooks.once('init', () => {
+  if ((game.release?.generation ?? 12) < 13) Hooks.on('renderChatMessage', bindShareButton);
+});
 
 /* --------------------------------------------------------------------
    The Ask Nethys window

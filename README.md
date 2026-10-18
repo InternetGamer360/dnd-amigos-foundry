@@ -162,10 +162,11 @@ directory, so it ends up as `Data/modules/dnd-amigos-connector/`.)
 
 #### Releasing a new version (for whoever maintains it)
 
-1. Change `version` in `module.json`, and set `compatibility.verified` to
-   the newest stable Foundry build (foundryvtt.com/releases) once the
-   module works on it, so it shows as verified on the latest Foundry.
-2. Commit, then tag and push: `git tag v1.5.2` and `git push --tags`. The tag
+1. Change `version` in `module.json`. `compatibility.verified` is a whole
+   Foundry generation (`"14"`), which Foundry treats as verified for every
+   build of that generation, so it only needs bumping (to `"15"`) once the
+   module is checked on a new generation.
+2. Commit, then tag and push: `git tag v1.5.3` and `git push --tags`. The tag
    must match `module.json`'s version with a leading `v`.
 3. The **Release** workflow (`.github/workflows/release.yml`) builds
    `module.zip`, points the manifest and download URLs at this repository's
