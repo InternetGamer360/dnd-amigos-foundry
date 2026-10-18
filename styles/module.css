@@ -372,10 +372,9 @@ table.dnd-amigos-loot-table tr:last-child td {
 }
 
 /* --------------------------------------------------------------------
-   The "P" button in the bottom-right corner of the game screen, by chat
+   The "&" button in the bottom-right corner of the game screen, by chat
    (placeCanvasButton() in main.js): a small black square with a red
-   Pathfinder-style "P" (gold with a dark red edge, drawn in a font, not
-   Paizo's logo artwork). Foundry's interface layers let clicks fall through to the
+   ampersand (drawn in a font, not anyone's logo artwork). Foundry's interface layers let clicks fall through to the
    canvas, so the button turns them back on for itself.
 -------------------------------------------------------------------- */
 
@@ -399,9 +398,7 @@ table.dnd-amigos-loot-table tr:last-child td {
   align-items: center;
   justify-content: center;
   background: #000;
-  color: #f2b51e;
-  -webkit-text-stroke: 1px #8b0f14;
-  text-shadow: 0 0 1px #8b0f14, 1px 2px 0 #5a0a0d;
+  color: #d0121b;
   border: 1px solid #2a2a2a;
   border-radius: 4px;
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
@@ -435,8 +432,8 @@ table.dnd-amigos-loot-table tr:last-child td {
 
 #dnd-amigos-canvas-button:hover,
 #dnd-amigos-canvas-button:focus-visible {
-  color: #ffd257;
-  box-shadow: 0 0 10px rgba(242, 181, 30, 0.6);
+  color: #ff2a2a;
+  box-shadow: 0 0 10px rgba(208, 18, 27, 0.7);
   outline: none;
 }
 

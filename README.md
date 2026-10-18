@@ -6,11 +6,11 @@ a button you click — nothing runs automatically in the background.
 
 ## Features
 
-A small black **"P" button** (a gold, Pathfinder-style P) in the bottom-right
+A small black **"&" button** (a red ampersand) in the bottom-right
 corner of the game screen, beside the chat box, opens a menu of
 everything below except Sync. The same menu is also behind the
 **"D&D Amigos"** button at the top of the Journal tab. (Each player can
-hide the P button: Configure Settings, "Show the D&D Amigos button". It
+hide the & button: Configure Settings, "Show the D&D Amigos button". It
 sits just left of the sidebar on Foundry v13+, or in the bottom-right of
 the play area on v12; the top right is left alone because PF2e shows
 conditions and effects there.) The menu has everything below except Sync (which lives on the actor sheet

@@ -87,7 +87,7 @@ Hooks.once('init', () => {
     default: 0,
   });
 
-  // The gold "P" button in the bottom-right corner of the game screen (placeCanvasButton()).
+  // The black-and-red "&" button in the bottom-right corner of the game screen (placeCanvasButton()).
   game.settings.register(MODULE_ID, 'canvasButton', {
     name: 'DNDAMIGOS.Settings.CanvasButton.Name',
     hint: 'DNDAMIGOS.Settings.CanvasButton.Hint',
@@ -1066,7 +1066,7 @@ Hooks.on('renderJournalDirectory', (app, html) => {
 });
 
 /* --------------------------------------------------------------------
-   The "P" button: a small black square with a gold, red-edged Pathfinder-style "P" in the
+   The "&" button: a small black square with a red ampersand in the
    bottom-right corner of the game screen, beside the chat box (the top
    right is where PF2e shows conditions and effects), opening the same D&D Amigos menu
    as the journal sidebar button. Players rarely open the Journal tab, so
@@ -1090,7 +1090,7 @@ function placeCanvasButton() {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.id = CANVAS_BUTTON_ID;
-  btn.textContent = 'P';
+  btn.textContent = '&';
   const label = game.i18n.localize('DNDAMIGOS.CanvasButton.Tooltip');
   btn.setAttribute('aria-label', label);
   btn.dataset.tooltip = label;
@@ -1117,7 +1117,7 @@ Hooks.once('ready', () => {
   try {
     placeCanvasButton();
   } catch (err) {
-    console.error(`${MODULE_ID} | could not place the P button`, err);
+    console.error(`${MODULE_ID} | could not place the & button`, err);
   }
 });
 
