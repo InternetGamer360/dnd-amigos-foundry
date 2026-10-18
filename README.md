@@ -144,12 +144,16 @@ define('FOUNDRY_ORIGIN', 'https://your-foundry-host');
 ### 2. Install this module
 
 Install it from its GitHub releases: in Foundry, Add-on Modules, Install
-Module, and paste this into "Manifest URL" (replace `<owner>/<repo>` with
-this repository):
+Module, and paste this into "Manifest URL":
 
 ```
-https://github.com/<owner>/<repo>/releases/latest/download/module.json
+https://github.com/InternetGamer360/dnd-amigos-foundry/releases/latest/download/module.json
 ```
+
+(Up to 1.5.1 the module was served from
+`https://hunterco.net/dnd-amigos-foundry/module.json`. That address still
+works: it now points installs at GitHub, so an older install moves over on
+its next Check for Updates.)
 
 Foundry's **Check for Updates** then picks up every new release from the
 same place. Enable the module in your world's Manage Modules screen. (You
@@ -158,9 +162,10 @@ directory, so it ends up as `Data/modules/dnd-amigos-connector/`.)
 
 #### Releasing a new version (for whoever maintains it)
 
-1. Change `version` in `module.json` (and `compatibility.verified` if you
-   tested on a newer Foundry).
-2. Commit, then tag and push: `git tag v1.3.0` and `git push --tags`. The tag
+1. Change `version` in `module.json`, and set `compatibility.verified` to
+   the newest stable Foundry build (foundryvtt.com/releases) once the
+   module works on it, so it shows as verified on the latest Foundry.
+2. Commit, then tag and push: `git tag v1.5.2` and `git push --tags`. The tag
    must match `module.json`'s version with a leading `v`.
 3. The **Release** workflow (`.github/workflows/release.yml`) builds
    `module.zip`, points the manifest and download URLs at this repository's
