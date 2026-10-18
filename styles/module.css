@@ -263,7 +263,19 @@
   transition: color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
 }
 
-/* v13/v14: first item in the #ui-right row, down at the bottom beside the chat box
+/* v14: bottom-right corner of #ui-right-column-1 (chat pop-ups column), right
+   beside the chat box. Absolute, so the pop-ups' own layout is untouched. */
+#ui-right-column-1.dnd-amigos-has-canvas-button {
+  position: relative;
+}
+
+#dnd-amigos-canvas-button.in-column {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+}
+
+/* Other v13/v14 layouts: first item in the #ui-right row, down at the bottom beside the chat box
    (the top right is where PF2e shows conditions and effects). */
 #dnd-amigos-canvas-button.in-right {
   align-self: flex-end;

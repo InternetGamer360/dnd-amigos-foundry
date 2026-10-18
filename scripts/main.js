@@ -1044,9 +1044,12 @@ Hooks.on('renderJournalDirectory', (app, html) => {
    as the journal sidebar button. Players rarely open the Journal tab, so
    this puts the menu where they already look. Where it goes depends on
    Foundry's layout, which changed between versions:
-     - v13/v14: #ui-right is a row (its first column, then the sidebar)
-       pinned to the right edge, so the button goes first in that row, at
-       the bottom: just left of the sidebar's chat box, moving with it.
+     - v14 (checked in the group's live world): #ui-right is a row of
+       #ui-right-column-1 (300px: chat pop-ups, PF2e's effects panel at its
+       top right) then the sidebar. The button is pinned to that column's
+       bottom-right corner, 16px from the sidebar, level with the chat box.
+     - other v13/v14 layouts with a #ui-right row but no such column: first
+       in that row, at the bottom.
      - v12: #ui-middle spans the whole gap between the left controls and
        the sidebar, so the button sits in that column's bottom-right corner.
      - neither found: a fixed bottom-right corner.
@@ -1069,10 +1072,15 @@ function placeCanvasButton() {
   btn.dataset.tooltipDirection = 'LEFT';
   btn.addEventListener('click', openAmigosMenu);
 
+  const column = document.getElementById('ui-right-column-1');
   const right = document.getElementById('ui-right');
   const rightStyle = right ? getComputedStyle(right) : null;
   const middle = document.getElementById('ui-middle');
-  if (rightStyle && rightStyle.display.includes('flex') && !rightStyle.flexDirection.startsWith('column')) {
+  if (column) {
+    btn.classList.add('in-column');
+    column.classList.add('dnd-amigos-has-canvas-button');
+    column.appendChild(btn);
+  } else if (rightStyle && rightStyle.display.includes('flex') && !rightStyle.flexDirection.startsWith('column')) {
     btn.classList.add('in-right');
     right.prepend(btn);
   } else if (middle) {
