@@ -41,24 +41,27 @@ divider so it's easy to find without being mistaken for one of them.
 - **Post Session Update** — opens a small dialog to send a message to
   the campaign's Discord, optionally also logging it as a real entry in
   the site's session log.
-- **Manage Loot** (called out in gold in the menu) — styled and laid
-  out like the site's own Party Loot table (pages/loot.php): a
-  Description/Qty/Value/Notes table, a running Total Party Wealth line,
-  and every current line right there with Edit/Delete. The site's
-  Party Loot ledger is fully shared — anyone can edit or remove any
-  line, not just whoever added it. Click **+ Add Loot** to add a new
-  one — it opens an editable row at the top of the table, the same way
-  the site's own "+ Add Loot" button does, credited to whichever D&D
-  Amigos member you told the module you are (see "Setting your
-  identity" below) — and, if a **Loot Actor** is configured (Configure
-  Settings → D&D Amigos Connection), also drops the same item onto that
-  world's shared PF2e Loot sheet, so the site's ledger and Foundry's
-  "closet of things found adventuring" stay in sync from one entry
-  instead of typing it twice. An item added while a Loot Actor is
-  configured stays linked to its matching Foundry Item, so editing or
-  deleting it here keeps both sides in sync; an item added straight on
-  the site, or before a Loot Actor was ever configured, has no such
-  link, so changes to it here only affect the site.
+- **Manage Loot** (called out in gold in the menu) — party loot lives
+  in Foundry: the PF2e **Party** actor's inventory is the party stash
+  (the "party" entry PF2e keeps in the Actors tab). Drag items in from
+  compendiums or character sheets, split coins, and hand things out
+  there, all standard PF2e. Manage Loot opens a small **Party Stash**
+  window: the stash's coins, item count and total at a glance, when it
+  was last synced, **Open Party Inventory** (PF2e's own Party sheet on
+  its Inventory tab), and **Sync Loot to Site**, which sends the stash
+  (every item with quantity, level, type, rarity and value, plus the
+  coins) to the site. Anyone can sync, whenever they like. From the
+  first sync on, the site's Party Loot page shows that snapshot
+  read-only ("Synced from Foundry", with an Archives of Nethys search
+  link per PF2e item) and its old editable ledger is frozen, so the two
+  can't drift. Unidentified items go up under the name the table sees,
+  with no level, value or link. Players need at least Observer
+  permission on the Party actor to open its inventory. The first time,
+  the GM also gets **Import Site Loot**: it copies the old site-side
+  ledger into the stash as treasure items (value split per item, notes
+  as the description) and syncs. Up to 1.5.x, Manage Loot edited the
+  site ledger directly and could mirror items onto a separate PF2e
+  "Loot" actor; both are gone, and the Loot Actor setting with them.
 - **NPCs & Places** (open to everyone; was "Look Up" before v1.1) —
   search the campaign's NPCs and Places, open one to read it (portrait,
   tagline, description), and add **notes** the whole party can see.
@@ -83,8 +86,9 @@ divider so it's easy to find without being mistaken for one of them.
   campaign's DM (or a site admin) can push; their identity must be
   set. Entries pushed from Foundry are marked on the site "Written in
   Foundry" and can't be edited there, only noted on.
-- **Import from D&D Amigos** (GM only) — pulls the campaign's Places,
-  NPCs, and Party Loot in as Journal Entries, and shows your E.Y.F.F.O.
+- **Import from D&D Amigos** (GM only) — pulls the campaign's Places
+  and NPCs in as Journal Entries (loot isn't imported: it lives in the
+  Party actor, see Manage Loot), and shows your E.Y.F.F.O.
   mini-game stats in a popup if you've set your identity and played it.
   For NPCs and Places it **adds pages that are not here yet and
   refreshes pages you have not touched, but never overwrites or deletes
@@ -109,8 +113,8 @@ divider so it's easy to find without being mistaken for one of them.
 ### Setting your identity
 
 Foundry accounts and D&D Amigos site accounts aren't linked to each
-other automatically. Adding loot through **Manage Loot**, **Post
-Session Update**, and the E.Y.F.F.O. stats popup in **Import from D&D
+other automatically. **Post Session Update**, NPC & Place notes, and
+the E.Y.F.F.O. stats popup in **Import from D&D
 Amigos** all need to know which site member you are so the right name
 gets credited. Each player
 sets this once per browser/device under **Configure Settings → My D&D
@@ -119,8 +123,8 @@ automatically once the connection is configured. This is saved
 per-browser (a Foundry "client" setting), not shared with other
 players and not tied to the world.
 
-Note that this identity is who gets credited as having *added* a loot
-line or session post — it's deliberately never assumed to also be who a
+Note that this identity is who gets credited for a session post or
+note — it's deliberately never assumed to also be who a
 newly-created character is *for*. A character made via "Create New on
 Site" shows up on the site as "Unassigned" until someone explicitly
 picks a Player there, even though your identity is what owns it (and
@@ -182,21 +186,18 @@ open **Configure Settings → D&D Amigos Connection** and fill in:
 - **Journal ID** — the numeric id of the campaign journal on the site
   this world corresponds to (visible in the site's URL when viewing
   that campaign, e.g. `journal.php?id=5` → `5`)
-- **Loot Actor** — optional. Pick this world's shared PF2e "Loot"
-  actor (party stash) from the dropdown if you have one — this is what
-  lets adding loot through **Manage Loot** write to Foundry as well as
-  the site. Leave it on "— None —" and adding loot still works, it
-  just only posts to the site.
 
 Click **Test Connection** before saving — it'll tell you the linked
 journal's name if everything's correct, or exactly what failed if not.
 
 ## Things worth knowing before relying on this
 
+**New in 1.6.0:** loot moved into Foundry (see Manage Loot above). The party-stash reading uses PF2e 8.x's own Party actor API (`game.actors.party`, `inventory.coins`, `totalWealth`, each item's `assetValue`), checked against the PF2e code running on the group's server, and the site side was tested end to end against a local copy of the site; the window itself had not yet been clicked through in the live world when this shipped.
+
 **New in 1.3.0:** every window now uses Foundry's newer window type (DialogV2) instead of the deprecated Dialog/FormApplication, which removes the deprecation warnings and future-proofs the module. Nothing about what the windows do changed. It was exercised against a stand-in Foundry, not a live world, so if any window misbehaves, turn on **Use legacy windows** in Configure Settings to get the old ones back. **New in 1.2.0:** pushing a character now saves the WHOLE actor on the site (every item with quantities and containers, spells, feats, skills, conditions, coins, biography), shown as a readable sheet on the PCs page, and Pull from Site can restore all of it onto an actor. Exercised against the site's endpoints with a hand-built actor, but the restore itself (Foundry's own Import Data path) has not been run in a live world. **New in 1.1.0:** NPCs & Places syncing and shared notes (pull, push, portraits, notes window). The data logic was exercised end to end against the real site endpoints, but the notes window itself was written without a live Foundry to click through, so treat its first real use as the test.
 
 This has been in real use by the group since v0.2.1 — sync (pull,
-push, and create), Add/Manage Loot, Post Session Update, Look Up,
+push, and create), the old Add/Manage Loot, Post Session Update, Look Up,
 Import, and the identity setting have all been clicked through against
 a real Foundry v14 instance at some point in this module's life.
 
@@ -208,20 +209,6 @@ directly against a local copy of the site) plus careful manual
 read-throughs of the JS, since there's no live Foundry instance to test
 against directly. As of this writing, that applies to the newest layer
 on top of the confirmed core above:
-- **Manage Loot's current layout** — a real table styled to match the
-  site's own loot table (`pages/loot.php`), with adding, editing, and
-  deleting all in one popup (the standalone Add Loot dialog was folded
-  in once Manage Loot could do everything it did). The Foundry-side
-  half (`addLootItemToFoundryActor()` /
-  `updateLootItemOnFoundryActor()` / `deleteLootItemFromFoundryActor()`
-  in `scripts/main.js`) all set the same pf2e `equipment` fields
-  (`system.quantity`, `system.price.value.gp`,
-  `system.description.value`), so they'd need the same fix together if
-  a future pf2e update renames any of them. The site-side call always
-  succeeds independently of the Foundry-side one — never a single
-  all-or-nothing outcome. Rests on a `loot_items.foundry_item_id`
-  column on the site plus `update-loot.php`/`delete-loot.php` to keep
-  an item's site row and Foundry Item linked.
 - **The single "D&D Amigos" menu** (`openAmigosMenu()` in
   `scripts/main.js`) — replacing what used to be several separate
   sidebar buttons with one that opens a Dialog listing them instead,
