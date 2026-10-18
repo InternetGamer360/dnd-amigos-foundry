@@ -142,5 +142,20 @@
   "DNDAMIGOS.ActorSheet.RestoreAllButton": "Restore everything",
   "DNDAMIGOS.ActorSheet.RestoreStatsButton": "Stats only",
   "DNDAMIGOS.ActorSheet.Restored": "Restored {name} from the site: {items} items.",
-  "DNDAMIGOS.ActorSheet.RestoreWrongType": "The saved character is a \"{saved}\" but this actor is a \"{actual}\", so it cannot be restored onto it."
+  "DNDAMIGOS.ActorSheet.RestoreWrongType": "The saved character is a \"{saved}\" but this actor is a \"{actual}\", so it cannot be restored onto it.",
+  "DNDAMIGOS.JournalDirectory.AskNethys": "Ask Nethys",
+  "DNDAMIGOS.Help.Nethys.Title": "Ask Nethys",
+  "DNDAMIGOS.Help.Nethys.Body": "Rules questions without alt-tabbing. Nethys is the same rules helper as the Discord bot and the website's Ask Nethys page: it looks Pathfinder 2e Remaster and Starfinder 2e rules up on Archives of Nethys and links its source. Type /nethys followed by your question in the chat box for a private answer only you see, with a Share with table button. Use /nethys! to post the question and answer for everyone. Or open Ask Nethys from this menu for a small chat window you can keep beside the map; it remembers the conversation for follow-up questions until you start a new chat or close Foundry, and each answer has a Share to chat link. Nethys can still be wrong, so check the linked page for anything that matters.",
+  "DNDAMIGOS.Nethys.WindowTitle": "Ask Nethys",
+  "DNDAMIGOS.Nethys.Placeholder": "Ask about a rule, class, spell, condition…",
+  "DNDAMIGOS.Nethys.Ask": "Ask",
+  "DNDAMIGOS.Nethys.NewChat": "New Chat",
+  "DNDAMIGOS.Nethys.WindowHint": "Enter to ask, Shift+Enter for a new line. In the chat box: /nethys <question> (private) or /nethys! <question> (everyone).",
+  "DNDAMIGOS.Nethys.Empty": "Ask a rules question. Follow-ups remember the conversation.",
+  "DNDAMIGOS.Nethys.Thinking": "Consulting the Archives…",
+  "DNDAMIGOS.Nethys.Failed": "Nethys could not answer: {error}",
+  "DNDAMIGOS.Nethys.Share": "Share with table",
+  "DNDAMIGOS.Nethys.ShareToChat": "Share to chat",
+  "DNDAMIGOS.Nethys.Shared": "Shared with the table.",
+  "DNDAMIGOS.Nethys.Usage": "Type /nethys followed by your question, e.g. /nethys does grabbed make me off-guard? (Use /nethys! to answer for the whole table.)"
 }

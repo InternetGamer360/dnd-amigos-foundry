@@ -85,6 +85,20 @@ divider so it's easy to find without being mistaken for one of them.
   a page you changed or made in Foundry** (it tells you how many it left
   alone). A page you already had with the same name as a site entry is
   linked to it rather than replaced.
+- **Ask Nethys** (everyone) — rules questions without alt-tabbing out of
+  a session. Nethys is the group's rules helper (the same one as the
+  Discord bot and the website's Ask Nethys page): it looks Pathfinder 2e
+  Remaster and Starfinder 2e rules up on Archives of Nethys and links
+  the page it used. Type `/nethys <question>` in the chat box for a
+  private answer card only you see, with a **Share with table** button;
+  `/nethys! <question>` posts the question and answer for everyone. Or
+  open **Ask Nethys** from the menu for a small chat window to keep
+  beside the map: follow-ups remember the conversation (until you click
+  New Chat or close Foundry), and each answer has a **Share to chat**
+  link. The answers come from the website
+  (`engine/api/foundry/nethys-ask.php`, which needs `OLLAMA_API_KEY` in
+  the site's config.php); the module holds no AI key. The whole table
+  shares a limit of 120 questions an hour.
 
 ### Setting your identity
 

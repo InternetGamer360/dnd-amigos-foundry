@@ -257,3 +257,116 @@ table.dnd-amigos-loot-table tr:last-child td {
 .dnd-amigos-note-tools { display: flex; gap: 12px; font-size: 0.8em; }
 .dnd-amigos-note textarea, .dnd-amigos-lore-new { width: 100%; }
 .dnd-amigos-lore-add, .dnd-amigos-note-save, .dnd-amigos-note-cancel { width: auto; margin-top: 4px; }
+
+/* --------------------------------------------------------------------
+   Ask Nethys (scripts/nethys.js): chat cards and the Ask Nethys window.
+-------------------------------------------------------------------- */
+
+.dnd-amigos-nethys-card .dnd-amigos-nethys-q {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.dnd-amigos-nethys-card .dnd-amigos-nethys-q i,
+.dnd-amigos-nethys-pending i {
+  color: #c9a227;
+}
+
+.dnd-amigos-nethys-card p,
+.dnd-amigos-nethys-msg p {
+  margin: 0 0 0.4em;
+}
+
+.dnd-amigos-nethys-card ul,
+.dnd-amigos-nethys-msg ul {
+  margin: 0.2em 0 0.4em;
+  padding-left: 1.3em;
+}
+
+.dnd-amigos-nethys-card a,
+.dnd-amigos-nethys-msg a {
+  overflow-wrap: anywhere;
+}
+
+.dnd-amigos-nethys-pending {
+  font-style: italic;
+  opacity: 0.8;
+}
+
+.dnd-amigos-nethys-error,
+.dnd-amigos-nethys-msg.is-error {
+  color: #a5271f;
+}
+
+.dnd-amigos-nethys-share {
+  margin-top: 4px;
+  line-height: 24px;
+}
+
+.dnd-amigos-nethys-window {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dnd-amigos-nethys-log {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 160px;
+  max-height: 55vh;
+  overflow-y: auto;
+  padding: 4px 2px;
+}
+
+.dnd-amigos-nethys-msg {
+  padding: 6px 10px;
+  border-radius: 6px;
+  max-width: 92%;
+  overflow-wrap: anywhere;
+}
+
+.dnd-amigos-nethys-msg.is-you {
+  align-self: flex-end;
+  background: rgba(201, 162, 39, 0.15);
+  border: 1px solid rgba(201, 162, 39, 0.4);
+  white-space: pre-wrap;
+}
+
+.dnd-amigos-nethys-msg.is-nethys {
+  align-self: flex-start;
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.dnd-amigos-nethys-share-link {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 0.85em;
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.dnd-amigos-nethys-share-link:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.dnd-amigos-nethys-window textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 3em;
+}
+
+.dnd-amigos-nethys-row {
+  display: flex;
+  gap: 6px;
+}
+
+.dnd-amigos-nethys-empty,
+.dnd-amigos-nethys-hint {
+  margin: 0;
+  font-size: 0.85em;
+  opacity: 0.75;
+  font-style: italic;
+}

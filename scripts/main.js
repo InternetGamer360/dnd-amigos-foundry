@@ -9,6 +9,7 @@
 
 import { configureLore, pullLore, describePull, pushLore, openLoreDialog } from './lore.js';
 import { openDialog, confirmDialog, MenuWindow } from './windows.js';
+import { configureNethys, openNethysWindow } from './nethys.js';
 
 const MODULE_ID = 'dnd-amigos-connector';
 
@@ -16,6 +17,7 @@ const MODULE_ID = 'dnd-amigos-connector';
 // so the two files never import each other. These are all function declarations or
 // settings read at call time, so wiring them up here is safe.
 configureLore({ MODULE_ID, apiRequest, apiUploadFile, isConfigured, getMyUserId });
+configureNethys({ MODULE_ID, apiRequest, isConfigured });
 
 /* --------------------------------------------------------------------
    Settings
@@ -937,6 +939,7 @@ function openAmigosMenu() {
     { action: 'post-event', icon: 'fa-paper-plane', labelKey: 'DNDAMIGOS.JournalDirectory.PostEvent', onClick: openPostEventDialog },
     { action: 'manage-loot', icon: 'fa-sack-dollar', labelKey: 'DNDAMIGOS.JournalDirectory.ManageLoot', onClick: openManageLootDialog, gold: true },
     { action: 'lookup', icon: 'fa-users', labelKey: 'DNDAMIGOS.JournalDirectory.Lookup', onClick: openLoreDialog },
+    { action: 'nethys', icon: 'fa-hat-wizard', labelKey: 'DNDAMIGOS.JournalDirectory.AskNethys', onClick: openNethysWindow },
   ];
   if (game.user.isGM) {
     entries.push({ action: 'import-info', icon: 'fa-download', labelKey: 'DNDAMIGOS.JournalDirectory.ImportInfo', onClick: importCampaignInfo });
@@ -981,6 +984,7 @@ function openHelpDialog() {
     ['DNDAMIGOS.Help.PostEvent.Title', 'DNDAMIGOS.Help.PostEvent.Body'],
     ['DNDAMIGOS.Help.ManageLoot.Title', 'DNDAMIGOS.Help.ManageLoot.Body'],
     ['DNDAMIGOS.Help.Lookup.Title', 'DNDAMIGOS.Help.Lookup.Body'],
+    ['DNDAMIGOS.Help.Nethys.Title', 'DNDAMIGOS.Help.Nethys.Body'],
     ['DNDAMIGOS.Help.PushLore.Title', 'DNDAMIGOS.Help.PushLore.Body'],
     ['DNDAMIGOS.Help.ImportInfo.Title', 'DNDAMIGOS.Help.ImportInfo.Body'],
     ['DNDAMIGOS.Help.Identity.Title', 'DNDAMIGOS.Help.Identity.Body'],
