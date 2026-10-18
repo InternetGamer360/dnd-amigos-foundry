@@ -272,7 +272,13 @@
 #dnd-amigos-canvas-button.in-column {
   position: absolute;
   right: 0;
-  bottom: 0;
+  bottom: 14px;
+}
+
+/* Sidebar collapsed: v14 floats the chat box over this same column (it stays in
+   the sidebar's markup), so step just left of it instead of covering its end. */
+#ui-right:has(#sidebar-content:not(.expanded)) #dnd-amigos-canvas-button.in-column {
+  right: calc(100% + 8px);
 }
 
 /* Other v13/v14 layouts: first item in the #ui-right row, down at the bottom beside the chat box
