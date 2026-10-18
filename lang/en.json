@@ -157,5 +157,10 @@
   "DNDAMIGOS.Nethys.Share": "Share with table",
   "DNDAMIGOS.Nethys.ShareToChat": "Share to chat",
   "DNDAMIGOS.Nethys.Shared": "Shared with the table.",
-  "DNDAMIGOS.Nethys.Usage": "Type /nethys followed by your question, e.g. /nethys does grabbed make me off-guard? (Use /nethys! to answer for the whole table.)"
+  "DNDAMIGOS.Nethys.Usage": "Type /nethys followed by your question, e.g. /nethys does grabbed make me off-guard? (Use /nethys! to answer for the whole table.)",
+  "DNDAMIGOS.Settings.CanvasButton.Name": "Show the D&D Amigos button",
+  "DNDAMIGOS.Settings.CanvasButton.Hint": "The small black \"P\" button in the bottom-right corner of the game screen, next to the chat box, that opens the D&D Amigos menu. Turn it off if it's in your way; the menu is still in the Journal tab. Applies to this browser only.",
+  "DNDAMIGOS.CanvasButton.Tooltip": "D&D Amigos",
+  "DNDAMIGOS.Help.Menu.Title": "Opening This Menu",
+  "DNDAMIGOS.Help.Menu.Body": "Click the small black \"P\" button in the bottom-right corner of the game screen, next to the chat box, or the D&D Amigos button at the top of the Journal tab. Both open this same menu. If the P button is in your way, turn it off under Configure Settings → Show the D&D Amigos button (just for your browser)."
 }

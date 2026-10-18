@@ -370,3 +370,76 @@ table.dnd-amigos-loot-table tr:last-child td {
   opacity: 0.75;
   font-style: italic;
 }
+
+/* --------------------------------------------------------------------
+   The "P" button in the bottom-right corner of the game screen, by chat
+   (placeCanvasButton() in main.js): a small black square with a red
+   Pathfinder-style "P" (gold with a dark red edge, drawn in a font, not
+   Paizo's logo artwork). Foundry's interface layers let clicks fall through to the
+   canvas, so the button turns them back on for itself.
+-------------------------------------------------------------------- */
+
+#ui-middle.dnd-amigos-has-canvas-button {
+  position: relative;
+}
+
+#dnd-amigos-canvas-button {
+  flex: none;
+  z-index: 60;
+  pointer-events: auto;
+  box-sizing: border-box;
+  width: 40px;
+  height: 40px;
+  min-width: 0;
+  min-height: 0;
+  max-height: 40px;
+  margin: 0;
+  padding: 0 0 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  color: #f2b51e;
+  -webkit-text-stroke: 1px #8b0f14;
+  text-shadow: 0 0 1px #8b0f14, 1px 2px 0 #5a0a0d;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+  font-family: 'Modesto Condensed', 'Amiri', Georgia, 'Times New Roman', serif;
+  font-size: 30px;
+  font-weight: bold;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+/* v13/v14: first item in the #ui-right row, down at the bottom beside the chat box
+   (the top right is where PF2e shows conditions and effects). */
+#dnd-amigos-canvas-button.in-right {
+  align-self: flex-end;
+  margin-bottom: 14px;
+}
+
+/* v12: bottom-right corner of #ui-middle. */
+#dnd-amigos-canvas-button.in-middle {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+}
+
+#dnd-amigos-canvas-button.is-fixed {
+  position: fixed;
+  bottom: 10px;
+  right: 320px;
+}
+
+#dnd-amigos-canvas-button:hover,
+#dnd-amigos-canvas-button:focus-visible {
+  color: #ffd257;
+  box-shadow: 0 0 10px rgba(242, 181, 30, 0.6);
+  outline: none;
+}
+
+#dnd-amigos-canvas-button:active {
+  transform: scale(0.95);
+}

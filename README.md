@@ -6,8 +6,14 @@ a button you click — nothing runs automatically in the background.
 
 ## Features
 
-One **"D&D Amigos"** button next to the Journal sidebar tab opens a
-menu of everything below except Sync (which lives on the actor sheet
+A small black **"P" button** (a gold, Pathfinder-style P) in the bottom-right
+corner of the game screen, beside the chat box, opens a menu of
+everything below except Sync. The same menu is also behind the
+**"D&D Amigos"** button at the top of the Journal tab. (Each player can
+hide the P button: Configure Settings, "Show the D&D Amigos button". It
+sits just left of the sidebar on Foundry v13+, or in the bottom-right of
+the play area on v12; the top right is left alone because PF2e shows
+conditions and effects there.) The menu has everything below except Sync (which lives on the actor sheet
 itself, since it's specific to one character). Every menu item is
 available to every player, not just the GM, except "Import from D&D
 Amigos," which stays GM-only. The top of that menu also has **"How to

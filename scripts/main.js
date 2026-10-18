@@ -87,6 +87,17 @@ Hooks.once('init', () => {
     default: 0,
   });
 
+  // The gold "P" button in the bottom-right corner of the game screen (placeCanvasButton()).
+  game.settings.register(MODULE_ID, 'canvasButton', {
+    name: 'DNDAMIGOS.Settings.CanvasButton.Name',
+    hint: 'DNDAMIGOS.Settings.CanvasButton.Hint',
+    scope: 'client',
+    config: true,
+    type: Boolean,
+    default: true,
+    onChange: () => placeCanvasButton(),
+  });
+
   // Escape hatch: draw the module's windows with Foundry's old Dialog instead of the newer one.
   game.settings.register(MODULE_ID, 'legacyWindows', {
     name: 'DNDAMIGOS.Settings.LegacyWindows.Name',
@@ -980,6 +991,7 @@ function openAmigosMenu() {
  */
 function openHelpDialog() {
   const sections = [
+    ['DNDAMIGOS.Help.Menu.Title', 'DNDAMIGOS.Help.Menu.Body'],
     ['DNDAMIGOS.Help.Sync.Title', 'DNDAMIGOS.Help.Sync.Body'],
     ['DNDAMIGOS.Help.PostEvent.Title', 'DNDAMIGOS.Help.PostEvent.Body'],
     ['DNDAMIGOS.Help.ManageLoot.Title', 'DNDAMIGOS.Help.ManageLoot.Body'],
@@ -1050,6 +1062,62 @@ Hooks.on('renderJournalDirectory', (app, html) => {
     // future "no journal buttons" report comes with a real stack trace
     // in the console instead of nothing at all.
     console.error(`${MODULE_ID} | renderJournalDirectory handler failed`, err);
+  }
+});
+
+/* --------------------------------------------------------------------
+   The "P" button: a small black square with a gold, red-edged Pathfinder-style "P" in the
+   bottom-right corner of the game screen, beside the chat box (the top
+   right is where PF2e shows conditions and effects), opening the same D&D Amigos menu
+   as the journal sidebar button. Players rarely open the Journal tab, so
+   this puts the menu where they already look. Where it goes depends on
+   Foundry's layout, which changed between versions:
+     - v13/v14: #ui-right is a row (its first column, then the sidebar)
+       pinned to the right edge, so the button goes first in that row, at
+       the bottom: just left of the sidebar's chat box, moving with it.
+     - v12: #ui-middle spans the whole gap between the left controls and
+       the sidebar, so the button sits in that column's bottom-right corner.
+     - neither found: a fixed bottom-right corner.
+   Each player can hide it (Configure Settings: "Show the D&D Amigos button").
+-------------------------------------------------------------------- */
+
+const CANVAS_BUTTON_ID = 'dnd-amigos-canvas-button';
+
+function placeCanvasButton() {
+  document.getElementById(CANVAS_BUTTON_ID)?.remove();
+  if (!game.settings.get(MODULE_ID, 'canvasButton')) return;
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.id = CANVAS_BUTTON_ID;
+  btn.textContent = 'P';
+  const label = game.i18n.localize('DNDAMIGOS.CanvasButton.Tooltip');
+  btn.setAttribute('aria-label', label);
+  btn.dataset.tooltip = label;
+  btn.dataset.tooltipDirection = 'LEFT';
+  btn.addEventListener('click', openAmigosMenu);
+
+  const right = document.getElementById('ui-right');
+  const rightStyle = right ? getComputedStyle(right) : null;
+  const middle = document.getElementById('ui-middle');
+  if (rightStyle && rightStyle.display.includes('flex') && !rightStyle.flexDirection.startsWith('column')) {
+    btn.classList.add('in-right');
+    right.prepend(btn);
+  } else if (middle) {
+    btn.classList.add('in-middle');
+    middle.classList.add('dnd-amigos-has-canvas-button');
+    middle.appendChild(btn);
+  } else {
+    btn.classList.add('is-fixed');
+    document.body.appendChild(btn);
+  }
+}
+
+Hooks.once('ready', () => {
+  try {
+    placeCanvasButton();
+  } catch (err) {
+    console.error(`${MODULE_ID} | could not place the P button`, err);
   }
 });
 
