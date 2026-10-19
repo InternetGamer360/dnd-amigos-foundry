@@ -1,20 +1,19 @@
 // D&D Amigos Connector — scripts/recap.js
 //
-// Session Recap (GM only): Nethys drafts a session-log entry from tonight's chat plus the GM's
-// story notes, the GM reviews it section by section, then it's posted to the site's Session
-// Log and saved as a page in this world's "Session Recaps" journal.
+// Session Recap (GM only): Nethys drafts a session-log entry from tonight's chat; the GM reads
+// one preview and posts it. Built to be light on the GM: no form to fill in first.
 //
-//   1. Pick the session: chat since the last recap (or since the last 4+ hour quiet gap the
-//      first time), with start/end the GM can adjust.
-//   2. Story notes: four optional boxes (where, who, what happened, where we stopped). Chat is
-//      mostly dice, so this is where the story comes from.
-//   3. The module condenses the chat into a compact transcript and computes "By the dice"
-//      exactly from the dice results (never by the AI), then asks the site
-//      (engine/api/foundry/recap-draft.php) for the title, story, highlights and worth noting.
-//   4. Review: every section is editable; each AI section has Rewrite (optionally with an
-//      instruction such as "shorter"). By the dice is editable but never rewritten.
-//   5. Post (engine/api/foundry/recap-post.php) + the journal page; that moment becomes
-//      "the last recap" for next time.
+//   1. Opening the window starts the draft at once, from chat since the last recap (or since
+//      the last 4+ hour quiet gap the first time). The range shows in one line, with Change.
+//   2. The module condenses the chat into a compact transcript and computes "By the dice"
+//      exactly from the dice results (never by the AI); the site
+//      (engine/api/foundry/recap-draft.php) has Nethys write title, story, highlights and
+//      worth noting.
+//   3. One preview, as the Session Log will show it: Post (most nights), Edit (the whole entry
+//      in one box), or Rewrite with an optional line from the GM ("they found the vault key",
+//      "shorter"), which redraws the whole recap and keeps the dice exact.
+//   4. Post (engine/api/foundry/recap-post.php) + a page in the "Session Recaps" journal; that
+//      moment becomes "the last recap" for next time.
 //
 // Click-to-run like the rest of the module. main.js hands over its API helpers through
 // configureRecap(), so the two files never import each other.
@@ -141,6 +140,37 @@ const fromLocalInput = (v) => (v ? new Date(v).getTime() : NaN);
 const sessionLabel = (start, end) => `${new Date(start).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })} – ${new Date(end).toLocaleTimeString([], { timeStyle: 'short' })}`;
 const sessionDate = (start) => toLocalInput(start).slice(0, 10);
 
+const listToText = (items) => (items ?? []).map((x) => `- ${x}`).join('\n');
+const textToList = (text) => String(text ?? '').split('\n').map((l) => l.replace(/^\s*[-*•]\s*/, '').trim()).filter(Boolean);
+
+/** The Session Log entry body: story, highlights, the exact dice lines, worth noting. */
+function composeBody(recap, dice) {
+  const parts = [];
+  if (recap.story) parts.push(`**${t('DNDAMIGOS.Recap.PreviouslyOn')}**\n${recap.story}`);
+  if (recap.highlights?.length) parts.push(`**${t('DNDAMIGOS.Recap.Section.highlights')}**\n${listToText(recap.highlights)}`);
+  if (dice.length) parts.push(`**${t('DNDAMIGOS.Recap.Section.dice')}**\n${listToText(dice)}`);
+  if (recap.worth_noting?.length) parts.push(`**${t('DNDAMIGOS.Recap.Section.worth_noting')}**\n${listToText(recap.worth_noting)}`);
+  return parts.join('\n\n');
+}
+
+/** The body's light Markdown (**bold** headings, "- " lists) as HTML, as the Session Log shows it. */
+function bodyToHtml(body) {
+  const inline = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  return String(body).split(/\n{2,}/).map((block) => {
+    const lines = block.split('\n');
+    const head = /^\*\*.+\*\*$/.test(lines[0]) ? `<h3>${esc(lines.shift().replace(/^\*\*|\*\*$/g, ''))}</h3>` : '';
+    const items = lines.filter((l) => l.startsWith('- '));
+    const rest = lines.filter((l) => !l.startsWith('- '));
+    return head + (rest.length ? `<p>${rest.map(inline).join('<br>')}</p>` : '') + (items.length ? `<ul>${items.map((l) => `<li>${inline(l.slice(2))}</li>`).join('')}</ul>` : '');
+  }).join('');
+}
+
+/**
+ * Session Recap: Nethys starts writing as soon as the window opens; the GM sees one preview of
+ * the finished entry. Most nights that's read it and Post. Edit turns the preview into one
+ * editable box; Rewrite takes an optional line ("they found the vault key", "shorter") and
+ * redraws the whole thing. The time range sits in one line with a Change link.
+ */
 export function openRecapWindow() {
   if (!game.user.isGM) {
     ui.notifications.warn(t('DNDAMIGOS.Recap.GmOnly'));
@@ -152,196 +182,175 @@ export function openRecapWindow() {
   }
   const messages = sortedMessages();
   const range = defaultRange(messages);
-  const notesBox = (key, rows) => `
-    <label class="dnd-amigos-recap-label">${esc(t(`DNDAMIGOS.Recap.Notes.${key}`))}</label>
-    <textarea data-note="${key}" rows="${rows}" placeholder="${esc(t(`DNDAMIGOS.Recap.Notes.${key}Hint`))}"></textarea>`;
 
   const dialog = openDialog({
     title: t('DNDAMIGOS.Recap.Title'),
-    width: 500,
+    width: 600,
     content: `
       <div class="dnd-amigos-recap">
-        <p class="dnd-amigos-recap-intro">${esc(t('DNDAMIGOS.Recap.Intro'))}</p>
-        <div class="dnd-amigos-recap-range">
+        <p class="dnd-amigos-recap-count"><span data-role="range"></span> · <a data-action="change-range">${esc(t('DNDAMIGOS.Recap.ChangeRange'))}</a></p>
+        <div class="dnd-amigos-recap-range" data-role="range-editor" hidden>
           <label>${esc(t('DNDAMIGOS.Recap.From'))} <input type="datetime-local" data-role="start" value="${toLocalInput(range.start)}"></label>
           <label>${esc(t('DNDAMIGOS.Recap.To'))} <input type="datetime-local" data-role="end" value="${toLocalInput(range.end)}"></label>
+          <button type="button" data-action="apply-range">${esc(t('DNDAMIGOS.Recap.ApplyRange'))}</button>
         </div>
-        <p class="dnd-amigos-recap-count" data-role="count"></p>
-        ${notesBox('where', 1)}${notesBox('who', 1)}${notesBox('what', 3)}${notesBox('stop', 1)}
-        <button type="button" data-action="write" class="dnd-amigos-menu-item-gold"><i class="fa-solid fa-feather"></i> ${esc(t('DNDAMIGOS.Recap.Write'))}</button>
+        <div class="dnd-amigos-recap-preview" data-role="preview"></div>
+        <div data-role="editor" hidden>
+          <input type="text" data-role="edit-title">
+          <textarea data-role="edit-body" rows="14"></textarea>
+        </div>
+        <div class="dnd-amigos-recap-rewrite" data-role="rewrite-row" hidden>
+          <input type="text" data-role="instruction" placeholder="${esc(t('DNDAMIGOS.Recap.InstructionHint'))}">
+          <button type="button" data-action="rewrite-go"><i class="fa-solid fa-rotate"></i> ${esc(t('DNDAMIGOS.Recap.Rewrite'))}</button>
+        </div>
+        <div class="dnd-amigos-recap-actions">
+          <button type="button" data-action="post" class="dnd-amigos-menu-item-gold" disabled><i class="fa-solid fa-paper-plane"></i> ${esc(t('DNDAMIGOS.Recap.Post'))}</button>
+          <button type="button" data-action="edit" disabled><i class="fa-solid fa-pen"></i> ${esc(t('DNDAMIGOS.Recap.Edit'))}</button>
+          <button type="button" data-action="rewrite" disabled><i class="fa-solid fa-rotate"></i> ${esc(t('DNDAMIGOS.Recap.RewriteEllipsis'))}</button>
+        </div>
         <p class="dnd-amigos-recap-status" data-role="status"></p>
       </div>`,
     buttons: { close: { label: game.i18n.localize('Close') } },
     render: (html) => {
       const root = html[0];
-      const startEl = root.querySelector('[data-role="start"]');
-      const endEl = root.querySelector('[data-role="end"]');
-      const countEl = root.querySelector('[data-role="count"]');
-      const statusEl = root.querySelector('[data-role="status"]');
-      const inRange = () => {
-        const s = fromLocalInput(startEl.value);
-        const e = fromLocalInput(endEl.value) + 59999; // the whole end minute
-        return messages.filter((m) => m.timestamp >= s && m.timestamp <= e);
-      };
-      const updateCount = () => {
+      const $ = (sel) => root.querySelector(sel);
+      const state = { start: range.start, end: range.end, request: null, recap: null, dice: [], edited: null };
+      const setStatus = (text) => { $('[data-role="status"]').textContent = text || ''; };
+      const setBusy = (busy) => root.querySelectorAll('.dnd-amigos-recap-actions button, [data-action="rewrite-go"]').forEach((b) => { b.disabled = busy || !state.recap; });
+
+      const inRange = () => messages.filter((m) => m.timestamp >= state.start && m.timestamp <= state.end + 59999);
+      const showRange = () => {
         const list = inRange();
         const rolls = list.reduce((n, m) => n + (m.rolls?.length ? 1 : 0), 0);
-        countEl.textContent = t('DNDAMIGOS.Recap.Count', { messages: list.length, rolls });
+        $('[data-role="range"]').textContent = `${sessionLabel(state.start, state.end)} · ${t('DNDAMIGOS.Recap.Count', { messages: list.length, rolls })}`;
       };
-      startEl.addEventListener('change', updateCount);
-      endEl.addEventListener('change', updateCount);
-      updateCount();
+      const showPreview = () => {
+        $('[data-role="editor"]').hidden = true;
+        $('[data-role="preview"]').hidden = false;
+        $('[data-role="preview"]').innerHTML = `<h2>${esc(state.recap.title || t('DNDAMIGOS.Recap.Title'))}</h2>${bodyToHtml(composeBody(state.recap, state.dice))}`;
+        $('[data-action="edit"]').innerHTML = `<i class="fa-solid fa-pen"></i> ${esc(t('DNDAMIGOS.Recap.Edit'))}`;
+      };
 
-      root.querySelector('[data-action="write"]').addEventListener('click', async (ev) => {
-        const btn = ev.currentTarget;
+      // Draft (or redraw) the whole recap. `instruction` is the GM's optional line.
+      const write = async (instruction = '') => {
         const list = inRange();
-        const notes = Object.fromEntries([...root.querySelectorAll('[data-note]')].map((el) => [el.dataset.note, el.value.trim()]));
-        if (!list.length && !Object.values(notes).some(Boolean)) {
-          statusEl.textContent = t('DNDAMIGOS.Recap.Nothing');
+        if (!list.length && !instruction) {
+          setStatus(t('DNDAMIGOS.Recap.Nothing'));
           return;
         }
-        const start = fromLocalInput(startEl.value);
-        const end = fromLocalInput(endEl.value);
         const session = readSession(list);
-        const dice = diceBullets(session);
-        const request = {
+        state.dice = diceBullets(session);
+        state.request = {
           journal_id: game.settings.get(deps.MODULE_ID, 'journalId'),
           user_id: deps.getMyUserId(),
           campaign: game.world.title,
-          session_label: sessionLabel(start, end),
+          session_label: sessionLabel(state.start, state.end),
           transcript: session.transcript,
-          dice_summary: dice.join('\n'),
-          notes,
+          dice_summary: state.dice.join('\n'),
+          notes: '',
         };
-        btn.disabled = true;
-        statusEl.textContent = t('DNDAMIGOS.Recap.Writing');
+        const body = state.recap && instruction !== null ? { ...state.request, current: state.recap, instruction } : state.request;
+        setBusy(true);
+        setStatus(t(state.recap ? 'DNDAMIGOS.Recap.Rewriting' : 'DNDAMIGOS.Recap.Writing'));
+        if (!state.recap) $('[data-role="preview"]').innerHTML = `<p class="dnd-amigos-recap-status">${esc(t('DNDAMIGOS.Recap.Writing'))}</p>`;
         try {
-          const { recap } = await deps.apiRequest('recap-draft.php', { method: 'POST', body: request });
-          dialog.close?.();
-          openReviewWindow({ request, recap, dice, start, end });
+          const { recap } = await deps.apiRequest('recap-draft.php', { method: 'POST', body });
+          state.recap = recap;
+          state.edited = null;
+          showPreview();
+          setStatus('');
         } catch (err) {
-          statusEl.textContent = t('DNDAMIGOS.Recap.Failed', { error: err.message });
-          btn.disabled = false;
-        }
-      });
-    },
-  });
-}
-
-const listToText = (items) => (items ?? []).map((x) => `- ${x}`).join('\n');
-const textToList = (text) => String(text ?? '').split('\n').map((l) => l.replace(/^\s*[-*•]\s*/, '').trim()).filter(Boolean);
-
-function openReviewWindow({ request, recap, dice, start, end }) {
-  const section = (key, label, value, { rows = 4, rewrite = true, input = false } = {}) => `
-    <div class="dnd-amigos-recap-section" data-section="${key}">
-      <div class="dnd-amigos-recap-section-head">
-        <strong>${esc(label)}</strong>
-        ${rewrite ? `<button type="button" data-rewrite="${key}"><i class="fa-solid fa-rotate"></i> ${esc(t('DNDAMIGOS.Recap.Rewrite'))}</button>` : ''}
-      </div>
-      ${input ? `<input type="text" data-field="${key}" value="${esc(value)}">` : `<textarea data-field="${key}" rows="${rows}">${esc(value)}</textarea>`}
-    </div>`;
-
-  const dialog = openDialog({
-    title: t('DNDAMIGOS.Recap.ReviewTitle', { session: request.session_label }),
-    width: 620,
-    content: `
-      <div class="dnd-amigos-recap dnd-amigos-recap-review">
-        <p class="dnd-amigos-recap-intro">${esc(t('DNDAMIGOS.Recap.ReviewIntro'))}</p>
-        <label class="dnd-amigos-recap-label">${esc(t('DNDAMIGOS.Recap.Instruction'))}</label>
-        <input type="text" data-role="instruction" placeholder="${esc(t('DNDAMIGOS.Recap.InstructionHint'))}">
-        ${section('title', t('DNDAMIGOS.Recap.Section.title'), recap.title, { input: true })}
-        ${section('story', t('DNDAMIGOS.Recap.Section.story'), recap.story, { rows: 6 })}
-        ${section('highlights', t('DNDAMIGOS.Recap.Section.highlights'), listToText(recap.highlights), { rows: 5 })}
-        ${section('dice', t('DNDAMIGOS.Recap.Section.dice'), listToText(dice), { rows: 4, rewrite: false })}
-        ${section('worth_noting', t('DNDAMIGOS.Recap.Section.worth_noting'), listToText(recap.worth_noting), { rows: 3 })}
-        <button type="button" data-action="post" class="dnd-amigos-menu-item-gold"><i class="fa-solid fa-paper-plane"></i> ${esc(t('DNDAMIGOS.Recap.Post'))}</button>
-        <p class="dnd-amigos-recap-status" data-role="status"></p>
-      </div>`,
-    buttons: { close: { label: game.i18n.localize('Close') } },
-    render: (html) => {
-      const root = html[0];
-      const field = (key) => root.querySelector(`[data-field="${key}"]`);
-      const statusEl = root.querySelector('[data-role="status"]');
-      const current = () => ({
-        title: field('title').value.trim(),
-        story: field('story').value.trim(),
-        highlights: textToList(field('highlights').value),
-        worth_noting: textToList(field('worth_noting').value),
-      });
-
-      root.querySelectorAll('[data-rewrite]').forEach((btn) => btn.addEventListener('click', async () => {
-        const key = btn.dataset.rewrite;
-        btn.disabled = true;
-        statusEl.textContent = t('DNDAMIGOS.Recap.Rewriting');
-        try {
-          const { recap: fresh } = await deps.apiRequest('recap-draft.php', {
-            method: 'POST',
-            body: { ...request, section: key, current: current(), instruction: root.querySelector('[data-role="instruction"]').value.trim() },
-          });
-          field(key).value = Array.isArray(fresh[key]) ? listToText(fresh[key]) : (fresh[key] || field(key).value);
-          statusEl.textContent = '';
-        } catch (err) {
-          statusEl.textContent = t('DNDAMIGOS.Recap.Failed', { error: err.message });
+          setStatus(t('DNDAMIGOS.Recap.Failed', { error: err.message }));
         } finally {
-          btn.disabled = false;
+          setBusy(false);
         }
-      }));
+      };
 
-      root.querySelector('[data-action="post"]').addEventListener('click', async (ev) => {
-        const btn = ev.currentTarget;
-        const c = current();
-        const dicelist = textToList(field('dice').value);
-        const parts = [];
-        if (c.story) parts.push(`**${t('DNDAMIGOS.Recap.PreviouslyOn')}**\n${c.story}`);
-        if (c.highlights.length) parts.push(`**${t('DNDAMIGOS.Recap.Section.highlights')}**\n${listToText(c.highlights)}`);
-        if (dicelist.length) parts.push(`**${t('DNDAMIGOS.Recap.Section.dice')}**\n${listToText(dicelist)}`);
-        if (c.worth_noting.length) parts.push(`**${t('DNDAMIGOS.Recap.Section.worth_noting')}**\n${listToText(c.worth_noting)}`);
-        if (!parts.length) {
-          statusEl.textContent = t('DNDAMIGOS.Recap.Empty');
+      $('[data-action="change-range"]').addEventListener('click', () => { $('[data-role="range-editor"]').hidden = !$('[data-role="range-editor"]').hidden; });
+      $('[data-action="apply-range"]').addEventListener('click', () => {
+        state.start = fromLocalInput($('[data-role="start"]').value);
+        state.end = fromLocalInput($('[data-role="end"]').value);
+        state.recap = null;
+        $('[data-role="range-editor"]').hidden = true;
+        showRange();
+        write();
+      });
+
+      $('[data-action="edit"]').addEventListener('click', () => {
+        const editing = !$('[data-role="editor"]').hidden;
+        if (editing) {
+          // Back to the preview, keeping the edits.
+          state.edited = { title: $('[data-role="edit-title"]').value.trim(), body: $('[data-role="edit-body"]').value.trim() };
+          $('[data-role="preview"]').innerHTML = `<h2>${esc(state.edited.title || t('DNDAMIGOS.Recap.Title'))}</h2>${bodyToHtml(state.edited.body)}`;
+          $('[data-role="editor"]').hidden = true;
+          $('[data-role="preview"]').hidden = false;
+          $('[data-action="edit"]').innerHTML = `<i class="fa-solid fa-pen"></i> ${esc(t('DNDAMIGOS.Recap.Edit'))}`;
           return;
         }
-        btn.disabled = true;
-        statusEl.textContent = t('DNDAMIGOS.Recap.Posting');
-        const body = parts.join('\n\n');
+        $('[data-role="edit-title"]').value = state.edited?.title ?? state.recap.title;
+        $('[data-role="edit-body"]').value = state.edited?.body ?? composeBody(state.recap, state.dice);
+        $('[data-role="preview"]').hidden = true;
+        $('[data-role="editor"]').hidden = false;
+        $('[data-action="edit"]').innerHTML = `<i class="fa-solid fa-eye"></i> ${esc(t('DNDAMIGOS.Recap.Preview'))}`;
+      });
+
+      $('[data-action="rewrite"]').addEventListener('click', () => {
+        $('[data-role="rewrite-row"]').hidden = !$('[data-role="rewrite-row"]').hidden;
+        if (!$('[data-role="rewrite-row"]').hidden) $('[data-role="instruction"]').focus();
+      });
+      const rewrite = () => {
+        if (state.edited && !window.confirm(t('DNDAMIGOS.Recap.RewriteLosesEdits'))) return;
+        write($('[data-role="instruction"]').value.trim());
+      };
+      $('[data-action="rewrite-go"]').addEventListener('click', rewrite);
+      $('[data-role="instruction"]').addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') { ev.preventDefault(); ev.stopPropagation(); rewrite(); }
+      });
+
+      $('[data-action="post"]').addEventListener('click', async () => {
+        const editing = !$('[data-role="editor"]').hidden;
+        const title = editing ? $('[data-role="edit-title"]').value.trim() : (state.edited?.title ?? state.recap.title);
+        const body = editing ? $('[data-role="edit-body"]').value.trim() : (state.edited?.body ?? composeBody(state.recap, state.dice));
+        if (!body) {
+          setStatus(t('DNDAMIGOS.Recap.Empty'));
+          return;
+        }
+        setBusy(true);
+        setStatus(t('DNDAMIGOS.Recap.Posting'));
         try {
           await deps.apiRequest('recap-post.php', {
             method: 'POST',
-            body: { journal_id: request.journal_id, user_id: request.user_id, title: c.title, body, session_date: sessionDate(start) },
+            body: { journal_id: state.request.journal_id, user_id: state.request.user_id, title, body, session_date: sessionDate(state.start) },
           });
         } catch (err) {
-          statusEl.textContent = t('DNDAMIGOS.Recap.Failed', { error: err.message });
-          btn.disabled = false;
+          setStatus(t('DNDAMIGOS.Recap.Failed', { error: err.message }));
+          setBusy(false);
           return;
         }
         let journalNote = '';
         try {
-          await saveJournalPage(`${sessionDate(start)} — ${c.title || t('DNDAMIGOS.Recap.Title')}`, body);
+          await saveJournalPage(`${sessionDate(state.start)} — ${title || t('DNDAMIGOS.Recap.Title')}`, body);
         } catch (err) {
           journalNote = ` ${t('DNDAMIGOS.Recap.JournalFailed', { error: err.message })}`;
         }
-        await game.settings.set(deps.MODULE_ID, 'lastRecapAt', end + 59999);
+        await game.settings.set(deps.MODULE_ID, 'lastRecapAt', state.end + 59999);
         ui.notifications.info(t('DNDAMIGOS.Recap.Posted') + journalNote);
         dialog.close?.();
       });
+
+      showRange();
+      write();
     },
   });
 }
 
-/** The recap as a page in this world's "Session Recaps" journal (Markdown-ish -> simple HTML). */
+/** The recap as a page in this world's "Session Recaps" journal. */
 async function saveJournalPage(name, body) {
-  const inline = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  const html = body.split(/\n{2,}/).map((block) => {
-    const lines = block.split('\n');
-    const head = lines[0].startsWith('**') ? `<h3>${inline(lines.shift()).replace(/<\/?strong>/g, '')}</h3>` : '';
-    const items = lines.filter((l) => l.startsWith('- '));
-    const rest = lines.filter((l) => !l.startsWith('- '));
-    return head + (rest.length ? `<p>${rest.map(inline).join('<br>')}</p>` : '') + (items.length ? `<ul>${items.map((l) => `<li>${inline(l.slice(2))}</li>`).join('')}</ul>` : '');
-  }).join('');
-  const page = { name, type: 'text', text: { content: html } };
+  const page = { name, type: 'text', text: { content: bodyToHtml(body) } };
   const journal = game.journal.find((j) => j.name === RECAP_JOURNAL);
   if (journal) await journal.createEmbeddedDocuments('JournalEntryPage', [page]);
   else await JournalEntry.create({ name: RECAP_JOURNAL, pages: [page] });
 }
 
 // Exposed for tests (pure helpers, no Foundry state).
-export const _test = { defaultRange, readSession, diceBullets, textToList, listToText };
+export const _test = { defaultRange, readSession, diceBullets, textToList, listToText, composeBody, bodyToHtml };

@@ -2,6 +2,9 @@
 
 All notable changes to the D&D Amigos Connector. Newest first.
 
+## 1.8.1 — 2026-10-19
+- **Session Recap is much less work for the GM.** No form first: opening it starts Nethys writing straight away, then shows **one preview** of the finished entry. Most nights: read it, press **Post**. **Edit** turns it into one editable box; **Rewrite…** takes an optional line (a fact Nethys missed, or "shorter") and redraws the whole recap. The time range is one line with a **change** link. By the dice stays exact.
+
 ## 1.8.0 — 2026-10-19
 - **Session Recap** (GM): Nethys drafts a session-log entry from the night's chat plus the GM's story notes (where they went, who they met, what happened, where you stopped). The session defaults to everything since the last recap. **By the dice** (nat 20s and 1s per character, biggest hits, most rolls) is counted exactly from the dice, never by the AI. Review section by section with **Rewrite** per section (optionally with an instruction), then **Post** to the site's Session Log and this world's **Session Recaps** journal. In the menu, and linked from the GM's End of Session Sync.
 

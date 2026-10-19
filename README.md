@@ -49,16 +49,16 @@ divider so it's easy to find without being mistaken for one of them.
   **Players:** the Party stash and their own character(s) in The Party.
   The same pieces as the separate buttons, so nothing new on the site.
 - **Session Recap** (GM only; in the menu and linked from End of Session
-  Sync) — Nethys drafts a session-log entry from the night's chat. The
-  session defaults to everything since the last recap (start/end
-  adjustable). Four optional story-note boxes (where they went, who they
-  met, what happened, where you stopped) carry the story, since chat is
-  mostly dice. The module condenses the chat into a compact transcript and
-  counts **By the dice** exactly from the dice results; the site
-  (`engine/api/foundry/recap-draft.php`) has Nethys write the title,
-  story, highlights and worth-noting sections. Every section is editable,
-  each AI section has **Rewrite** (with an optional instruction), and
-  **Post** adds it to the Session Log (`recap-post.php`) and to the
+  Sync) — Nethys drafts a session-log entry from the night's chat as soon
+  as the window opens; there's no form to fill in first. The session is
+  everything since the last recap (one line at the top, with a **change**
+  link). The module condenses the chat into a compact transcript and counts
+  **By the dice** exactly from the dice results; the site
+  (`engine/api/foundry/recap-draft.php`) has Nethys write the title, story,
+  highlights and worth noting. You get one preview, as the Session Log will
+  show it: **Post** (most nights), **Edit** (the whole entry in one box), or
+  **Rewrite…** with an optional line such as a fact Nethys missed or
+  "shorter". Post adds it to the Session Log (`recap-post.php`) and to the
   world's "Session Recaps" journal.
 - **Post Session Update** — opens a small dialog to send a message to
   the campaign's Discord, optionally also logging it as a real entry in

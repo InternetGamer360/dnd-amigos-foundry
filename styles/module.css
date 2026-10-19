@@ -513,3 +513,39 @@
 .dnd-amigos-ss-recap a {
   cursor: pointer;
 }
+
+.dnd-amigos-recap-preview {
+  max-height: 55vh;
+  overflow-y: auto;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+.dnd-amigos-recap-preview h2 {
+  margin: 0 0 6px;
+}
+
+.dnd-amigos-recap-preview h3 {
+  margin: 10px 0 4px;
+  font-size: 1em;
+}
+
+.dnd-amigos-recap-actions,
+.dnd-amigos-recap-rewrite {
+  display: flex;
+  gap: 6px;
+}
+
+.dnd-amigos-recap-rewrite input {
+  flex: 1;
+}
+
+.dnd-amigos-recap-rewrite button {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.dnd-amigos-recap-count a {
+  cursor: pointer;
+}
