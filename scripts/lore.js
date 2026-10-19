@@ -195,6 +195,14 @@ export function describePull(summary) {
    Push: Foundry -> site (GM only)
 -------------------------------------------------------------------- */
 
+/** How many NPC/Place pages a push would send (End of Session Sync's checklist shows this). */
+export function countLorePages() {
+  return Object.keys(KINDS).reduce((n, kind) => {
+    const journal = findLoreJournal(kind);
+    return n + (journal ? [...journal.pages].filter((p) => p.type === 'text' && p.name.trim()).length : 0);
+  }, 0);
+}
+
 export async function pushLore() {
   if (!game.user.isGM) {
     ui.notifications.warn(t('DNDAMIGOS.Lore.GmOnly'));
@@ -204,13 +212,27 @@ export async function pushLore() {
     ui.notifications.warn(t('DNDAMIGOS.ActorSheet.NotConfigured'));
     return;
   }
-  const userId = deps.getMyUserId();
-  if (!userId) {
+  if (!deps.getMyUserId()) {
     ui.notifications.warn(t('DNDAMIGOS.Lore.NeedIdentity'));
     return;
   }
-  const journalId = game.settings.get(deps.MODULE_ID, 'journalId');
   ui.notifications.info(t('DNDAMIGOS.Lore.Pushing'));
+  const { lines, problems } = await pushLoreCore();
+  if (!lines.length && !problems.length) {
+    ui.notifications.info(t('DNDAMIGOS.Lore.NothingToPush'));
+    return;
+  }
+  if (lines.length) ui.notifications.info(`${t('DNDAMIGOS.Lore.Pushed')} ${lines.join('. ')}.`);
+  problems.forEach((p) => ui.notifications.error(t('DNDAMIGOS.Error.Generic', { error: p })));
+}
+
+/**
+ * The push itself, with no pop-ups (GM, identity set, connection configured: the caller checks).
+ * Returns { lines: ["NPCs: 1 new, 2 updated, 9 unchanged", ...], problems: [...] }.
+ */
+export async function pushLoreCore() {
+  const userId = deps.getMyUserId();
+  const journalId = game.settings.get(deps.MODULE_ID, 'journalId');
 
   const lines = [];
   const problems = [];
@@ -263,13 +285,7 @@ export async function pushLore() {
     }
     lines.push(`${KINDS[kind].plural}: ${tally.created} new, ${tally.updated} updated, ${tally.unchanged} unchanged`);
   }
-
-  if (!lines.length && !problems.length) {
-    ui.notifications.info(t('DNDAMIGOS.Lore.NothingToPush'));
-    return;
-  }
-  if (lines.length) ui.notifications.info(`${t('DNDAMIGOS.Lore.Pushed')} ${lines.join('. ')}.`);
-  problems.forEach((p) => ui.notifications.error(t('DNDAMIGOS.Error.Generic', { error: p })));
+  return { lines, problems };
 }
 
 /**

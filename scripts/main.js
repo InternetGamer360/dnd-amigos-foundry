@@ -11,6 +11,7 @@ import { configureLore, pullLore, describePull, pushLore, openLoreDialog } from 
 import { openDialog, confirmDialog, MenuWindow } from './windows.js';
 import { configureNethys, openNethysWindow } from './nethys.js';
 import { configureStash, openStashWindow } from './stash.js';
+import { configureSessionSync, openSessionSync } from './session-sync.js';
 
 const MODULE_ID = 'dnd-amigos-connector';
 
@@ -20,6 +21,7 @@ const MODULE_ID = 'dnd-amigos-connector';
 configureLore({ MODULE_ID, apiRequest, apiUploadFile, isConfigured, getMyUserId });
 configureNethys({ MODULE_ID, apiRequest, isConfigured });
 configureStash({ MODULE_ID, apiRequest, isConfigured });
+configureSessionSync({ MODULE_ID, isConfigured, getMyUserId, syncCharacterCore });
 
 /* --------------------------------------------------------------------
    Settings
@@ -588,14 +590,17 @@ async function applyCharacterToActor(actor, characterId) {
  * own check), so this module doesn't need to guess or duplicate that
  * rule.
  */
-async function pushActorToVault(actor, characterId) {
+/**
+ * The push itself, with no pop-ups: returns { ok, name, tokenError, snapshotLine, snapshotSaved,
+ * error, status } so both the sheet button (pushActorToVault) and End of Session Sync can report it
+ * their own way. status is the HTTP status on failure (404 = the vault entry was deleted on the site).
+ */
+async function pushCharacterCore(actor, characterId) {
   const myUserId = getMyUserId();
-  if (!myUserId) {
-    ui.notifications.warn(game.i18n.localize('DNDAMIGOS.ActorSheet.NoIdentityWarning'));
-    return;
-  }
+  if (!myUserId) return { ok: false, error: game.i18n.localize('DNDAMIGOS.ActorSheet.NoIdentityWarning') };
 
-  const payload = { character_id: characterId, user_id: myUserId, ...extractBasicCharacterFromActor(actor), ...snapshotPayload(actor) };
+  const snap = buildActorSnapshot(actor);
+  const payload = { character_id: characterId, user_id: myUserId, ...extractBasicCharacterFromActor(actor), ...snapshotPayloadFrom(snap) };
 
   let character;
   let snapshotResult = null;
@@ -604,21 +609,37 @@ async function pushActorToVault(actor, characterId) {
     character = data.character;
     snapshotResult = data.snapshot || null;
   } catch (err) {
-    ui.notifications.error(game.i18n.format('DNDAMIGOS.Error.Generic', { error: err.message }));
-    return;
+    return { ok: false, error: err.message, status: err.status ?? null };
   }
 
   await actor.setFlag(MODULE_ID, 'characterName', character.name);
-
   const tokenResult = await pushActorTokenToVault(actor, characterId, myUserId);
-  if (tokenResult.status === 'error') {
-    ui.notifications.warn(game.i18n.format('DNDAMIGOS.ActorSheet.PushedStatsTokenFailed', { name: character.name, error: tokenResult.error }));
-  } else {
-    ui.notifications.info(game.i18n.format('DNDAMIGOS.ActorSheet.PushedToSite', { name: character.name }));
+  return {
+    ok: true,
+    name: character.name,
+    tokenError: tokenResult.status === 'error' ? tokenResult.error : null,
+    snapshotLine: snap.error || describeSnapshotResult(actor, snapshotResult),
+    snapshotSaved: !snap.error && !!snapshotResult?.saved,
+  };
+}
+
+async function pushActorToVault(actor, characterId) {
+  if (!getMyUserId()) {
+    ui.notifications.warn(game.i18n.localize('DNDAMIGOS.ActorSheet.NoIdentityWarning'));
+    return;
   }
-  const snapshotLine = describeSnapshotResult(actor, snapshotResult);
-  if (snapshotLine) {
-    (snapshotResult.saved ? ui.notifications.info : ui.notifications.warn).call(ui.notifications, snapshotLine);
+  const r = await pushCharacterCore(actor, characterId);
+  if (!r.ok) {
+    ui.notifications.error(game.i18n.format('DNDAMIGOS.Error.Generic', { error: r.error }));
+    return;
+  }
+  if (r.tokenError) {
+    ui.notifications.warn(game.i18n.format('DNDAMIGOS.ActorSheet.PushedStatsTokenFailed', { name: r.name, error: r.tokenError }));
+  } else {
+    ui.notifications.info(game.i18n.format('DNDAMIGOS.ActorSheet.PushedToSite', { name: r.name }));
+  }
+  if (r.snapshotLine) {
+    (r.snapshotSaved ? ui.notifications.info : ui.notifications.warn).call(ui.notifications, r.snapshotLine);
   }
 }
 
@@ -724,10 +745,13 @@ function buildActorSnapshot(actor) {
 /** Fields every push or create sends alongside the basics so the site can keep the whole character. */
 function snapshotPayload(actor) {
   const snap = buildActorSnapshot(actor);
-  if (snap.error) {
-    ui.notifications.warn(snap.error);
-    return {};
-  }
+  if (snap.error) ui.notifications.warn(snap.error);
+  return snapshotPayloadFrom(snap);
+}
+
+/** snapshotPayload() without the pop-up, for callers that report problems themselves. */
+function snapshotPayloadFrom(snap) {
+  if (snap.error) return {};
   return {
     snapshot: snap.data,
     foundry_version: String(game.version || ''),
@@ -811,15 +835,17 @@ function extractBasicCharacterFromActor(actor) {
   };
 }
 
-async function createCharacterFromActor(actor) {
+/**
+ * Creating the vault entry, with no pop-ups: links the actor to it and, with { withToken }, also
+ * pushes the portrait. Returns { ok, id, name, tokenError, snapshotLine, snapshotSaved, error }.
+ */
+async function createCharacterCore(actor, { withToken = false } = {}) {
   const myUserId = getMyUserId();
-  if (!myUserId) {
-    ui.notifications.warn(game.i18n.localize('DNDAMIGOS.ActorSheet.NoIdentityWarning'));
-    return;
-  }
+  if (!myUserId) return { ok: false, error: game.i18n.localize('DNDAMIGOS.ActorSheet.NoIdentityWarning') };
 
   const journalId = game.settings.get(MODULE_ID, 'journalId');
-  const payload = { journal_id: journalId, user_id: myUserId, ...extractBasicCharacterFromActor(actor), ...snapshotPayload(actor) };
+  const snap = buildActorSnapshot(actor);
+  const payload = { journal_id: journalId, user_id: myUserId, ...extractBasicCharacterFromActor(actor), ...snapshotPayloadFrom(snap) };
 
   let character;
   let snapshotResult = null;
@@ -828,17 +854,52 @@ async function createCharacterFromActor(actor) {
     character = data.character;
     snapshotResult = data.snapshot || null;
   } catch (err) {
-    ui.notifications.error(game.i18n.format('DNDAMIGOS.Error.Generic', { error: err.message }));
-    return;
+    return { ok: false, error: err.message, status: err.status ?? null };
   }
 
   await actor.setFlag(MODULE_ID, 'characterId', character.id);
   await actor.setFlag(MODULE_ID, 'characterName', character.name);
-  ui.notifications.info(game.i18n.format('DNDAMIGOS.ActorSheet.CreatedOnSite', { name: character.name }));
-  const snapshotLine = describeSnapshotResult(actor, snapshotResult);
-  if (snapshotLine) {
-    (snapshotResult.saved ? ui.notifications.info : ui.notifications.warn).call(ui.notifications, snapshotLine);
+  const tokenResult = withToken ? await pushActorTokenToVault(actor, character.id, myUserId) : { status: 'skipped' };
+  return {
+    ok: true,
+    id: character.id,
+    name: character.name,
+    tokenError: tokenResult.status === 'error' ? tokenResult.error : null,
+    snapshotLine: snap.error || describeSnapshotResult(actor, snapshotResult),
+    snapshotSaved: !snap.error && !!snapshotResult?.saved,
+  };
+}
+
+async function createCharacterFromActor(actor) {
+  if (!getMyUserId()) {
+    ui.notifications.warn(game.i18n.localize('DNDAMIGOS.ActorSheet.NoIdentityWarning'));
+    return;
   }
+  const r = await createCharacterCore(actor);
+  if (!r.ok) {
+    ui.notifications.error(game.i18n.format('DNDAMIGOS.Error.Generic', { error: r.error }));
+    return;
+  }
+  ui.notifications.info(game.i18n.format('DNDAMIGOS.ActorSheet.CreatedOnSite', { name: r.name }));
+  if (r.snapshotLine) {
+    (r.snapshotSaved ? ui.notifications.info : ui.notifications.warn).call(ui.notifications, r.snapshotLine);
+  }
+}
+
+/**
+ * End of Session Sync's character step: push a linked actor; create the vault entry for one that
+ * isn't linked yet, or whose entry was deleted on the site (the dead link is cleared first).
+ * Returns { ok, action: 'pushed'|'created', name, tokenError, snapshotLine, error }.
+ */
+async function syncCharacterCore(actor) {
+  const linkedId = actor.getFlag(MODULE_ID, 'characterId');
+  if (linkedId) {
+    const r = await pushCharacterCore(actor, linkedId);
+    if (r.ok || r.status !== 404) return { ...r, action: 'pushed' };
+    await actor.unsetFlag(MODULE_ID, 'characterId');
+    await actor.unsetFlag(MODULE_ID, 'characterName');
+  }
+  return { ...(await createCharacterCore(actor, { withToken: true })), action: 'created' };
 }
 
 /**
@@ -919,6 +980,7 @@ function addDirectoryButton(container, { className, icon, labelKey, onClick }) {
 function openAmigosMenu() {
   const entries = [
     { action: 'help', icon: 'fa-circle-question', labelKey: 'DNDAMIGOS.JournalDirectory.HelpButton', onClick: openHelpDialog, help: true },
+    { action: 'session-sync', icon: 'fa-flag-checkered', labelKey: 'DNDAMIGOS.JournalDirectory.SessionSync', onClick: openSessionSync, gold: true },
     { action: 'post-event', icon: 'fa-paper-plane', labelKey: 'DNDAMIGOS.JournalDirectory.PostEvent', onClick: openPostEventDialog },
     { action: 'manage-loot', icon: 'fa-sack-dollar', labelKey: 'DNDAMIGOS.JournalDirectory.ManageLoot', onClick: openStashWindow, gold: true },
     { action: 'lookup', icon: 'fa-users', labelKey: 'DNDAMIGOS.JournalDirectory.Lookup', onClick: openLoreDialog },
@@ -964,6 +1026,7 @@ function openAmigosMenu() {
 function openHelpDialog() {
   const sections = [
     ['DNDAMIGOS.Help.Menu.Title', 'DNDAMIGOS.Help.Menu.Body'],
+    ['DNDAMIGOS.Help.SessionSync.Title', 'DNDAMIGOS.Help.SessionSync.Body'],
     ['DNDAMIGOS.Help.Sync.Title', 'DNDAMIGOS.Help.Sync.Body'],
     ['DNDAMIGOS.Help.PostEvent.Title', 'DNDAMIGOS.Help.PostEvent.Body'],
     ['DNDAMIGOS.Help.ManageLoot.Title', 'DNDAMIGOS.Help.ManageLoot.Body'],

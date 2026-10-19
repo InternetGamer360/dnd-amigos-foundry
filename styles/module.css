@@ -360,3 +360,81 @@
   font-style: italic;
   opacity: 0.75;
 }
+
+/* --------------------------------------------------------------------
+   End of Session Sync window (scripts/session-sync.js)
+-------------------------------------------------------------------- */
+
+.dnd-amigos-session-sync p {
+  margin: 0 0 6px;
+}
+
+.dnd-amigos-ss-intro {
+  opacity: 0.85;
+}
+
+.dnd-amigos-ss-part {
+  border-top: 1px solid rgba(0, 0, 0, 0.15);
+  padding: 8px 0 4px;
+}
+
+.dnd-amigos-ss-part.is-disabled {
+  opacity: 0.6;
+}
+
+.dnd-amigos-ss-part label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dnd-amigos-ss-detail {
+  font-size: 0.85em;
+  opacity: 0.8;
+  margin-left: 22px !important;
+}
+
+.dnd-amigos-ss-chars {
+  list-style: none;
+  margin: 2px 0 4px 22px;
+  padding: 0;
+  font-size: 0.9em;
+}
+
+.dnd-amigos-ss-chars li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.dnd-amigos-ss-plan {
+  opacity: 0.6;
+  font-style: italic;
+}
+
+.dnd-amigos-ss-status {
+  margin-left: auto;
+  font-size: 0.85em;
+}
+
+.dnd-amigos-ss-part > .dnd-amigos-ss-status {
+  float: right;
+}
+
+.dnd-amigos-ss-status.is-ok { color: #3d8b3a; }
+.dnd-amigos-ss-status.is-warn { color: #a06a00; }
+.dnd-amigos-ss-status.is-error { color: #a5271f; }
+.dnd-amigos-ss-status.is-working { font-style: italic; opacity: 0.8; }
+
+.dnd-amigos-session-sync [data-action="run"] {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.dnd-amigos-ss-summary {
+  margin-top: 8px !important;
+  font-weight: bold;
+}
+
+.dnd-amigos-ss-summary.is-ok { color: #3d8b3a; }
+.dnd-amigos-ss-summary.is-error { color: #a5271f; }
