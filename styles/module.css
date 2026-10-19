@@ -432,3 +432,84 @@
 
 .dnd-amigos-ss-summary.is-ok { color: #3d8b3a; }
 .dnd-amigos-ss-summary.is-error { color: #a5271f; }
+
+/* --------------------------------------------------------------------
+   Session Recap windows (scripts/recap.js)
+-------------------------------------------------------------------- */
+
+.dnd-amigos-recap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dnd-amigos-recap p {
+  margin: 0 0 4px;
+}
+
+.dnd-amigos-recap-intro,
+.dnd-amigos-recap-count {
+  font-size: 0.9em;
+  opacity: 0.85;
+}
+
+.dnd-amigos-recap-range {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dnd-amigos-recap-range label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dnd-amigos-recap-label {
+  font-weight: bold;
+  margin-top: 4px;
+}
+
+.dnd-amigos-recap textarea,
+.dnd-amigos-recap input[type="text"] {
+  width: 100%;
+  resize: vertical;
+}
+
+.dnd-amigos-recap [data-action="write"],
+.dnd-amigos-recap [data-action="post"] {
+  margin-top: 8px;
+}
+
+.dnd-amigos-recap-section {
+  border-top: 1px solid rgba(0, 0, 0, 0.15);
+  padding-top: 6px;
+}
+
+.dnd-amigos-recap-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.dnd-amigos-recap-section-head button {
+  flex: 0 0 auto;
+  width: auto;
+  line-height: 22px;
+  font-size: 0.85em;
+}
+
+.dnd-amigos-recap-status {
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.dnd-amigos-ss-recap {
+  margin-top: 8px !important;
+  font-size: 0.9em;
+}
+
+.dnd-amigos-ss-recap a {
+  cursor: pointer;
+}

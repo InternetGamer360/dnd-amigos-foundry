@@ -2,6 +2,9 @@
 
 All notable changes to the D&D Amigos Connector. Newest first.
 
+## 1.8.0 — 2026-10-19
+- **Session Recap** (GM): Nethys drafts a session-log entry from the night's chat plus the GM's story notes (where they went, who they met, what happened, where you stopped). The session defaults to everything since the last recap. **By the dice** (nat 20s and 1s per character, biggest hits, most rolls) is counted exactly from the dice, never by the AI. Review section by section with **Rewrite** per section (optionally with an instruction), then **Post** to the site's Session Log and this world's **Session Recaps** journal. In the menu, and linked from the GM's End of Session Sync.
+
 ## 1.7.3 — 2026-10-19
 Security: personal Foundry tokens (from the website security audit).
 - **My D&D Amigos Identity** now takes your personal Foundry token (make it on your D&D Amigos Account page → Foundry Connection) instead of picking your name from a list. **Check token** shows whose it is; Save checks it again before storing it (this browser only). Every request sends it as `X-Foundry-User`.

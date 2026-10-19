@@ -16,6 +16,7 @@ import { openDialog } from './windows.js';
 import { esc, t, getParty, formatCp } from './util.js';
 import { syncLootToSite } from './stash.js';
 import { pushLoreCore, countLorePages } from './lore.js';
+import { openRecapWindow } from './recap.js';
 
 let deps = null;
 
@@ -86,6 +87,7 @@ export function openSessionSync() {
       ${isGM ? part('lore', t('DNDAMIGOS.SessionSync.Lore'), hasIdentity ? t('DNDAMIGOS.SessionSync.LoreDetail', { count: lorePages }) : t('DNDAMIGOS.SessionSync.NeedIdentity'), { enabled: hasIdentity && lorePages > 0 }) : ''}
       <button type="button" data-action="run" class="dnd-amigos-menu-item-gold"><i class="fa-solid fa-cloud-arrow-up"></i> ${esc(t('DNDAMIGOS.SessionSync.Run'))}</button>
       <p class="dnd-amigos-ss-summary" data-role="summary"></p>
+      ${isGM ? `<p class="dnd-amigos-ss-recap"><a data-action="recap"><i class="fa-solid fa-feather"></i> ${esc(t('DNDAMIGOS.SessionSync.WriteRecap'))}</a></p>` : ''}
     </div>`;
 
   syncWindow = openDialog({
@@ -96,6 +98,7 @@ export function openSessionSync() {
     render: (html) => {
       const root = html[0];
       const runBtn = root.querySelector('[data-action="run"]');
+      root.querySelector('[data-action="recap"]')?.addEventListener('click', () => openRecapWindow());
       const partEl = (key) => root.querySelector(`[data-part="${key}"]`);
       const ticked = (key) => !!partEl(key)?.querySelector('[data-role="tick"]')?.checked;
       const setStatus = (el, text, kind) => {

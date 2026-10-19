@@ -12,6 +12,7 @@ import { openDialog, confirmDialog, MenuWindow } from './windows.js';
 import { configureNethys, openNethysWindow } from './nethys.js';
 import { configureStash, openStashWindow } from './stash.js';
 import { configureSessionSync, openSessionSync } from './session-sync.js';
+import { configureRecap, openRecapWindow } from './recap.js';
 import { MODULE_ID, esc as attr } from './util.js';
 
 
@@ -22,6 +23,7 @@ configureLore({ MODULE_ID, apiRequest, apiUploadFile, isConfigured, getMyUserId 
 configureNethys({ MODULE_ID, apiRequest, isConfigured });
 configureStash({ MODULE_ID, apiRequest, isConfigured });
 configureSessionSync({ MODULE_ID, isConfigured, getMyUserId, syncCharacterCore });
+configureRecap({ MODULE_ID, apiRequest, isConfigured, getMyUserId });
 
 /* --------------------------------------------------------------------
    Settings
@@ -69,6 +71,14 @@ Hooks.once('init', () => {
   // uses for players without a token during the grace period.
   game.settings.register(MODULE_ID, 'myUserId', {
     scope: 'client',
+    config: false,
+    type: Number,
+    default: 0,
+  });
+
+  // When the last Session Recap was posted (ms): the next recap starts after it (scripts/recap.js).
+  game.settings.register(MODULE_ID, 'lastRecapAt', {
+    scope: 'world',
     config: false,
     type: Number,
     default: 0,
@@ -999,6 +1009,7 @@ function openAmigosMenu() {
     { action: 'nethys', icon: 'fa-hat-wizard', labelKey: 'DNDAMIGOS.JournalDirectory.AskNethys', onClick: openNethysWindow },
   ];
   if (game.user.isGM) {
+    entries.push({ action: 'session-recap', icon: 'fa-feather', labelKey: 'DNDAMIGOS.JournalDirectory.SessionRecap', onClick: openRecapWindow });
     entries.push({ action: 'import-info', icon: 'fa-download', labelKey: 'DNDAMIGOS.JournalDirectory.ImportInfo', onClick: importCampaignInfo });
     entries.push({ action: 'push-lore', icon: 'fa-upload', labelKey: 'DNDAMIGOS.JournalDirectory.PushLore', onClick: pushLore });
   }
@@ -1039,6 +1050,7 @@ function openHelpDialog() {
   const sections = [
     ['DNDAMIGOS.Help.Menu.Title', 'DNDAMIGOS.Help.Menu.Body'],
     ['DNDAMIGOS.Help.SessionSync.Title', 'DNDAMIGOS.Help.SessionSync.Body'],
+    ['DNDAMIGOS.Help.Recap.Title', 'DNDAMIGOS.Help.Recap.Body'],
     ['DNDAMIGOS.Help.Sync.Title', 'DNDAMIGOS.Help.Sync.Body'],
     ['DNDAMIGOS.Help.PostEvent.Title', 'DNDAMIGOS.Help.PostEvent.Body'],
     ['DNDAMIGOS.Help.ManageLoot.Title', 'DNDAMIGOS.Help.ManageLoot.Body'],
