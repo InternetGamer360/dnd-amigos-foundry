@@ -118,28 +118,27 @@ divider so it's easy to find without being mistaken for one of them.
   the site's config.php); the module holds no AI key. The whole table
   shares a limit of 120 questions an hour.
 
-### Setting your identity
+### Setting your identity (personal token)
 
-Foundry accounts and D&D Amigos site accounts aren't linked to each
-other automatically. **Post Session Update**, NPC & Place notes, and
-the E.Y.F.F.O. stats popup in **Import from D&D
-Amigos** all need to know which site member you are so the right name
-gets credited. Each player
-sets this once per browser/device under **Configure Settings → My D&D
-Amigos Identity** — a plain dropdown of site members, populated
-automatically once the connection is configured. This is saved
-per-browser (a Foundry "client" setting), not shared with other
-players and not tied to the world.
+Foundry accounts and D&D Amigos site accounts aren't linked automatically,
+and the shared connection key can be read by every Foundry player, so the
+site doesn't take the module's word for who you are. Instead, each player:
 
-Note that this identity is who gets credited for a session post or
-note — it's deliberately never assumed to also be who a
-newly-created character is *for*. A character made via "Create New on
-Site" shows up on the site as "Unassigned" until someone explicitly
-picks a Player there, even though your identity is what owns it (and
-can edit it). This is on purpose: since a DM often creates several
-characters for the whole table in one sitting, defaulting the Player to
-whoever clicked the button made every one of those look like the DM's
-own character.
+1. On the website, opens their **Account** page → **Foundry Connection** →
+   **Create token**, and copies it (it's shown once).
+2. In Foundry, opens **Configure Settings → My D&D Amigos Identity**, pastes
+   it, presses **Check token** (it shows whose token it is) and **Save**.
+
+It's saved per browser (a Foundry "client" setting), so do it once on each
+device. The module sends it with every request (`X-Foundry-User`), and the
+site acts as that member whatever else the module sends. Replace or revoke
+it on the Account page anytime. The site's admin page lists who has set one
+up and has **Require personal tokens**: until that's on, older module
+versions still work the old way.
+
+Your identity is who gets credited for session posts, notes and new
+characters; it's never assumed to be who a newly created character is
+*for* (that shows "Unassigned" on the site until a Player is picked there).
 
 ## Setup
 

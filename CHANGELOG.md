@@ -2,6 +2,12 @@
 
 All notable changes to the D&D Amigos Connector. Newest first.
 
+## 1.7.3 — 2026-10-19
+Security: personal Foundry tokens (from the website security audit).
+- **My D&D Amigos Identity** now takes your personal Foundry token (make it on your D&D Amigos Account page → Foundry Connection) instead of picking your name from a list. **Check token** shows whose it is; Save checks it again before storing it (this browser only). Every request sends it as `X-Foundry-User`.
+- Why: the shared connection key is a world setting every Foundry player can read, and the site used to trust whichever member the module named, so anyone could have acted as anyone. Now the site works out who you are from your token.
+- Older versions keep working until an admin turns on **Require personal tokens** on the site's admin page.
+
 ## 1.7.2 — 2026-10-19
 Polish and cleanup; no new features.
 - **Fixed:** Test Connection (Configure Settings → D&D Amigos Connection) used to save whatever was typed in before you pressed Save, so testing a wrong URL and pressing Cancel still kept it. It now tests the typed values without saving them.

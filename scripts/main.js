@@ -64,14 +64,10 @@ Hooks.once('init', () => {
     restricted: true,
   });
 
-  // Client-scoped (per-browser-profile, not per-world) so each player
-  // picks their own site identity independently — there's still no
-  // Foundry-user-to-site-user mapping otherwise, and this is what lets
-  // Post Session Update and notes credit the right
-  // person instead of everything landing under the GM's or DM's name.
+  // This browser's D&D Amigos member id. Since 1.7.3 it's filled in from the personal token
+  // (My D&D Amigos Identity -> whoami.php); it's still sent as user_id, which the site only
+  // uses for players without a token during the grace period.
   game.settings.register(MODULE_ID, 'myUserId', {
-    name: 'DNDAMIGOS.Settings.MyUserId.Name',
-    hint: 'DNDAMIGOS.Settings.MyUserId.Hint',
     scope: 'client',
     config: false,
     type: Number,
@@ -87,6 +83,15 @@ Hooks.once('init', () => {
     type: Boolean,
     default: true,
     onChange: () => placeCanvasButton(),
+  });
+
+  // Your personal Foundry token from the D&D Amigos Account page, sent as X-Foundry-User so the
+  // site knows who is acting (set in My D&D Amigos Identity; this browser only).
+  game.settings.register(MODULE_ID, 'userToken', {
+    scope: 'client',
+    config: false,
+    type: String,
+    default: '',
   });
 
   // Escape hatch: draw the module's windows with Foundry's old Dialog instead of the newer one.
@@ -174,10 +179,11 @@ class DndAmigosApiError extends Error {
 function getApiConfig(override = null) {
   const baseUrl = String(override?.siteUrl ?? game.settings.get(MODULE_ID, 'siteUrl') ?? '').replace(/\/+$/, '');
   const apiKey = override?.apiKey ?? game.settings.get(MODULE_ID, 'apiKey');
+  const userToken = String(override?.userToken ?? game.settings.get(MODULE_ID, 'userToken') ?? '').trim();
   if (!baseUrl || !apiKey) {
     throw new DndAmigosApiError(game.i18n.localize('DNDAMIGOS.Error.NotConfigured'));
   }
-  return { baseUrl, apiKey };
+  return { baseUrl, apiKey, userToken };
 }
 
 /**
@@ -200,11 +206,11 @@ async function parseApiResponse(response) {
 
 /** `config` ({ siteUrl, apiKey }) overrides the saved connection, e.g. to test typed-in values. */
 async function apiRequest(path, { method = 'GET', body = null, config = null } = {}) {
-  const { baseUrl, apiKey } = getApiConfig(config);
+  const { baseUrl, apiKey, userToken } = getApiConfig(config);
 
   const options = {
     method,
-    headers: { 'X-Foundry-Key': apiKey },
+    headers: { 'X-Foundry-Key': apiKey, ...(userToken ? { 'X-Foundry-User': userToken } : {}) },
   };
   if (body) {
     options.headers['Content-Type'] = 'application/json';
@@ -228,13 +234,13 @@ async function apiRequest(path, { method = 'GET', body = null, config = null } =
  * than a JSON string.
  */
 async function apiUploadFile(path, formData) {
-  const { baseUrl, apiKey } = getApiConfig();
+  const { baseUrl, apiKey, userToken } = getApiConfig();
 
   let response;
   try {
     response = await fetch(`${baseUrl}/engine/api/foundry/${path}`, {
       method: 'POST',
-      headers: { 'X-Foundry-Key': apiKey },
+      headers: { 'X-Foundry-Key': apiKey, ...(userToken ? { 'X-Foundry-User': userToken } : {}) },
       body: formData,
     });
   } catch (err) {
@@ -314,52 +320,82 @@ function openConnectionSettings() {
   });
 }
 
+/**
+ * My D&D Amigos Identity: paste the personal Foundry token from your D&D Amigos Account
+ * page. The site works out who you are from it (api/foundry/whoami.php), so nobody can act
+ * as someone else even though every player can read the shared connection key. Check shows
+ * whose token it is; Save checks it again, then stores it (this browser only) along with
+ * your member id. Clearing the field removes the token.
+ */
 async function openIdentitySettings() {
-  const t = (key) => game.i18n.localize(key);
-  const currentId = getMyUserId();
+  const t = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localize(key));
+  const saved = String(game.settings.get(MODULE_ID, 'userToken') || '');
 
-  let choices = [];
-  let error = null;
-  if (!isConfigured()) {
-    error = t('DNDAMIGOS.Error.NotConfigured');
-  } else {
-    try {
-      const data = await apiRequest('members-list.php');
-      choices = data.members;
-    } catch (err) {
-      error = err.message;
-    }
-  }
+  const whoami = async (token) => (await apiRequest('whoami.php', { config: { userToken: token } })).user;
 
-  const body = error
-    ? `<p class="notes" style="color:#a94442;">${attr(error)}</p>`
-    : `
+  const content = isConfigured()
+    ? `
+      <p>${t('DNDAMIGOS.Identity.Intro')}</p>
       <div class="form-group">
-        <label>${t('DNDAMIGOS.Settings.MyUserId.Name')}</label>
-        <select name="userId" style="width:100%;">
-          <option value="0">${t('DNDAMIGOS.Settings.MyUserId.None')}</option>
-          ${choices.map((m) => `<option value="${attr(m.id)}"${Number(m.id) === currentId ? ' selected' : ''}>${attr(m.display_name)}</option>`).join('')}
-        </select>
-        <p class="notes">${t('DNDAMIGOS.Settings.MyUserId.Hint')}</p>
-      </div>`;
+        <label>${t('DNDAMIGOS.Settings.UserToken.Name')}</label>
+        <input type="password" name="userToken" value="${attr(saved)}" placeholder="dafu_…" autocomplete="off" style="width:100%;font-family:monospace;">
+        <p class="notes">${t('DNDAMIGOS.Settings.UserToken.Hint')}</p>
+      </div>
+      <div class="form-group">
+        <button type="button" data-action="check-token"><i class="fa-solid fa-user-check"></i> ${t('DNDAMIGOS.Identity.Check')}</button>
+        <p class="dnd-amigos-test-result notes"></p>
+      </div>`
+    : `<p class="notes" style="color:#a94442;">${attr(t('DNDAMIGOS.Error.NotConfigured'))}</p>`;
 
   openDialog({
     title: t('DNDAMIGOS.IdentityMenu.Name'),
-    width: 420,
-    content: body,
+    width: 440,
+    content,
     buttons: {
-      ...(error ? {} : {
+      ...(isConfigured() ? {
         save: {
-          label: game.i18n.localize('DNDAMIGOS.Common.Save'),
+          label: t('DNDAMIGOS.Common.Save'),
           icon: '<i class="fa-solid fa-save"></i>',
           callback: async (html) => {
-            await game.settings.set(MODULE_ID, 'myUserId', Number(html.find('[name="userId"]').val()) || 0);
+            const token = String(html.find('[name="userToken"]').val() || '').trim();
+            if (!token) {
+              await game.settings.set(MODULE_ID, 'userToken', '');
+              ui.notifications.info(t('DNDAMIGOS.Identity.Cleared'));
+              return;
+            }
+            try {
+              const user = await whoami(token);
+              await game.settings.set(MODULE_ID, 'userToken', token);
+              await game.settings.set(MODULE_ID, 'myUserId', Number(user.id) || 0);
+              ui.notifications.info(t('DNDAMIGOS.Identity.Saved', { name: user.display_name }));
+            } catch (err) {
+              ui.notifications.error(t('DNDAMIGOS.Identity.NotSaved', { error: err.message }));
+            }
           },
         },
-      }),
-      cancel: { label: t(error ? 'Close' : 'Cancel') },
+      } : {}),
+      cancel: { label: game.i18n.localize(isConfigured() ? 'Cancel' : 'Close') },
     },
-    default: error ? 'cancel' : 'save',
+    default: isConfigured() ? 'save' : 'cancel',
+    render: (html) => {
+      html.find('[data-action="check-token"]').on('click', async () => {
+        const token = String(html.find('[name="userToken"]').val() || '').trim();
+        const resultEl = html.find('.dnd-amigos-test-result');
+        if (!token) {
+          resultEl.text(t('DNDAMIGOS.Identity.NoToken'));
+          resultEl.css('color', '');
+          return;
+        }
+        try {
+          const user = await whoami(token);
+          resultEl.text(t('DNDAMIGOS.Identity.Belongs', { name: user.display_name }));
+          resultEl.css('color', 'green');
+        } catch (err) {
+          resultEl.text(err.message);
+          resultEl.css('color', 'red');
+        }
+      });
+    },
   });
 }
 
