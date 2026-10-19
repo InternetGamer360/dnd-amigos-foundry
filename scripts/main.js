@@ -12,8 +12,8 @@ import { openDialog, confirmDialog, MenuWindow } from './windows.js';
 import { configureNethys, openNethysWindow } from './nethys.js';
 import { configureStash, openStashWindow } from './stash.js';
 import { configureSessionSync, openSessionSync } from './session-sync.js';
+import { MODULE_ID, esc as attr } from './util.js';
 
-const MODULE_ID = 'dnd-amigos-connector';
 
 // NPCs & Places (scripts/lore.js) gets the pieces of this file it needs handed to it,
 // so the two files never import each other. These are all function declarations or
@@ -137,33 +137,15 @@ Hooks.once('ready', () => {
   if (!game.user.isGM || isConfigured()) return;
 
   openDialog({
-    title: 'D&D Amigos Connector — Setup Needed',
-    content: `
-      <p>This module isn't connected to the D&D Amigos website yet. To finish setup:</p>
-      <ol style="padding-left: 20px; margin: 0 0 10px;">
-        <li>On the website, an admin sets <code>FOUNDRY_API_KEY</code> and
-          <code>FOUNDRY_ORIGIN</code> in <code>engine/config.php</code> —
-          one-time, done once for the whole group.</li>
-        <li>Here, open <strong>Configure Settings &rarr; D&D Amigos
-          Connection</strong> and fill in the Site URL, that same API Key,
-          and the numeric Journal ID for this campaign (visible in the
-          site's URL, e.g. <code>journal.php?id=5</code> &rarr;
-          <code>5</code>).</li>
-        <li>Click <strong>Test Connection</strong> before saving to
-          confirm it's working.</li>
-      </ol>
-      <p>Once that's done, every player (not just the GM) should also open
-        <strong>Configure Settings &rarr; My D&D Amigos Identity</strong>
-        once on each of their devices and pick their own name — that's
-        what credits loot and session posts to the right person.</p>
-    `,
+    title: game.i18n.localize('DNDAMIGOS.Setup.Title'),
+    content: game.i18n.localize('DNDAMIGOS.Setup.Body'),
     buttons: {
       open: {
-        label: 'Open Connection Settings',
+        label: game.i18n.localize('DNDAMIGOS.Setup.Open'),
         icon: '<i class="fa-solid fa-link"></i>',
         callback: () => openConnectionSettings(),
       },
-      later: { label: 'Later' },
+      later: { label: game.i18n.localize('DNDAMIGOS.Setup.Later') },
     },
     default: 'open',
     width: 480,
@@ -189,9 +171,9 @@ class DndAmigosApiError extends Error {
  * "is this even configured" check and base URL, just with a different
  * request body shape (JSON vs FormData) after this point.
  */
-function getApiConfig() {
-  const baseUrl = String(game.settings.get(MODULE_ID, 'siteUrl') || '').replace(/\/+$/, '');
-  const apiKey = game.settings.get(MODULE_ID, 'apiKey');
+function getApiConfig(override = null) {
+  const baseUrl = String(override?.siteUrl ?? game.settings.get(MODULE_ID, 'siteUrl') ?? '').replace(/\/+$/, '');
+  const apiKey = override?.apiKey ?? game.settings.get(MODULE_ID, 'apiKey');
   if (!baseUrl || !apiKey) {
     throw new DndAmigosApiError(game.i18n.localize('DNDAMIGOS.Error.NotConfigured'));
   }
@@ -216,8 +198,9 @@ async function parseApiResponse(response) {
   return data;
 }
 
-async function apiRequest(path, { method = 'GET', body = null } = {}) {
-  const { baseUrl, apiKey } = getApiConfig();
+/** `config` ({ siteUrl, apiKey }) overrides the saved connection, e.g. to test typed-in values. */
+async function apiRequest(path, { method = 'GET', body = null, config = null } = {}) {
+  const { baseUrl, apiKey } = getApiConfig(config);
 
   const options = {
     method,
@@ -270,7 +253,6 @@ async function apiUploadFile(path, formData) {
    loot/session-post actions get credited correctly.
 -------------------------------------------------------------------- */
 
-const attr = (value) => foundry.utils.escapeHTML(String(value ?? ''));
 
 function openConnectionSettings() {
   const t = (key) => game.i18n.localize(key);
@@ -294,13 +276,13 @@ function openConnectionSettings() {
         <p class="notes">${t('DNDAMIGOS.Settings.JournalId.Hint')}</p>
       </div>
       <div class="form-group">
-        <button type="button" data-action="test-connection"><i class="fa-solid fa-plug"></i> Test Connection</button>
+        <button type="button" data-action="test-connection"><i class="fa-solid fa-plug"></i> ${t('DNDAMIGOS.SettingsMenu.TestConnection')}</button>
         <p class="dnd-amigos-test-result notes"></p>
       </div>
     `,
     buttons: {
       save: {
-        label: 'Save',
+        label: game.i18n.localize('DNDAMIGOS.Common.Save'),
         icon: '<i class="fa-solid fa-save"></i>',
         callback: async (html) => {
           await game.settings.set(MODULE_ID, 'siteUrl', String(html.find('[name="siteUrl"]').val() || '').replace(/\/+$/, ''));
@@ -318,13 +300,9 @@ function openConnectionSettings() {
         const journalId = Number(html.find('[name="journalId"]').val());
         const resultEl = html.find('.dnd-amigos-test-result');
 
-        // Test with whatever's currently typed, not necessarily saved yet.
-        await game.settings.set(MODULE_ID, 'siteUrl', siteUrl);
-        await game.settings.set(MODULE_ID, 'apiKey', apiKey);
-        await game.settings.set(MODULE_ID, 'journalId', journalId);
-
+        // Test whatever is typed right now, without saving it: Cancel must leave the old settings alone.
         try {
-          const data = await apiRequest(`campaign-info.php?journal_id=${journalId}`);
+          const data = await apiRequest(`campaign-info.php?journal_id=${journalId}`, { config: { siteUrl, apiKey } });
           resultEl.text(game.i18n.format('DNDAMIGOS.Error.TestConnectionOk', { name: data.journal.name }));
           resultEl.css('color', 'green');
         } catch (err) {
@@ -372,7 +350,7 @@ async function openIdentitySettings() {
     buttons: {
       ...(error ? {} : {
         save: {
-          label: 'Save',
+          label: game.i18n.localize('DNDAMIGOS.Common.Save'),
           icon: '<i class="fa-solid fa-save"></i>',
           callback: async (html) => {
             await game.settings.set(MODULE_ID, 'myUserId', Number(html.find('[name="userId"]').val()) || 0);
@@ -943,12 +921,10 @@ function buildBasicPf2eUpdate(character) {
 }
 
 /* --------------------------------------------------------------------
-   A single "D&D Amigos" journal directory button opening a menu of
-   every journal-adjacent action — Post Session Update, Manage Loot,
-   Look Up, and (GM-only) Import from D&D Amigos.
+   The "D&D Amigos" journal directory button: opens the same menu as the
+   & button on the game screen (End of Session Sync, Post Session Update,
+   Manage Loot, NPCs & Places, Ask Nethys, and the GM-only items).
 -------------------------------------------------------------------- */
-
-console.log(`${MODULE_ID} | main.js loaded, registering renderJournalDirectory`);
 
 /**
  * Builds one toolbar button and wires its click handler — used by
@@ -1091,7 +1067,6 @@ Hooks.on('renderJournalDirectory', (app, html) => {
       onClick: openAmigosMenu,
     });
 
-    console.log(`${MODULE_ID} | journal directory button injected into`, container);
   } catch (err) {
     // Never let this hook throw silently again — log loudly so a
     // future "no journal buttons" report comes with a real stack trace
@@ -1271,11 +1246,11 @@ async function importCampaignInfo() {
         openDialog({
           title: game.i18n.localize('DNDAMIGOS.Import.Title'),
           content: `
-            <p><strong>${foundry.utils.escapeHTML(p.name)}</strong> — Level ${p.level}</p>
-            <p>HP ${p.hp_current}/${p.hp_max} · Gold ${p.gold} · Turns ${p.turns_remaining}</p>
-            <p>Attack ${p.attack} · Defense ${p.defense} · Cargo ${p.cargo_capacity}</p>
+            <p><strong>${attr(p.name)}</strong> — ${game.i18n.format('DNDAMIGOS.Import.PersonaLevel', { level: p.level })}</p>
+            <p>${game.i18n.format('DNDAMIGOS.Import.PersonaStats1', { hp: `${p.hp_current}/${p.hp_max}`, gold: p.gold, turns: p.turns_remaining })}</p>
+            <p>${game.i18n.format('DNDAMIGOS.Import.PersonaStats2', { attack: p.attack, defense: p.defense, cargo: p.cargo_capacity })}</p>
           `,
-          buttons: { ok: { label: 'OK' } },
+          buttons: { ok: { label: game.i18n.localize('DNDAMIGOS.Common.Ok') } },
         });
       } else {
         ui.notifications.info(game.i18n.localize('DNDAMIGOS.Import.PersonaNone'));

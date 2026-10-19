@@ -18,6 +18,7 @@
 // configureNethys(), so the two files never import each other.
 
 import { openDialog } from './windows.js';
+import { esc, t } from './util.js';
 
 let deps = null;
 
@@ -25,8 +26,6 @@ export function configureNethys(d) {
   deps = d;
 }
 
-const esc = (s) => foundry.utils.escapeHTML(String(s ?? ''));
-const t = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localize(key));
 
 const HISTORY_TURNS = 12;
 const COMMAND = /^\/nethys(!?)(?:\s+([\s\S]*))?$/i;
@@ -75,7 +74,7 @@ function cardHtml({ question, answer, pending = false, error = null, shareable =
 const SPEAKER = () => ({ alias: 'Nethys' });
 
 /** Post a finished question + answer for the whole table. */
-export async function postPublicCard(question, answer) {
+async function postPublicCard(question, answer) {
   return ChatMessage.create({
     speaker: SPEAKER(),
     content: cardHtml({ question, answer }),

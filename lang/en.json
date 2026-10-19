@@ -69,7 +69,6 @@
   "DNDAMIGOS.PostEvent.Send": "Send",
   "DNDAMIGOS.PostEvent.Success": "Posted to D&D Amigos.",
   "DNDAMIGOS.PostEvent.SuccessNoLog": "Posted to Discord, but not logged to the session log — set your identity (Configure Settings → My D&D Amigos Identity) or link this journal to a DM account on the site.",
-  "DNDAMIGOS.Lookup.Title": "Look Up — D&D Amigos",
   "DNDAMIGOS.Lookup.SearchPlaceholder": "Search Places and NPCs…",
   "DNDAMIGOS.Lookup.NoMatches": "No matches.",
   "DNDAMIGOS.Import.Title": "D&D Amigos Campaign Info",
@@ -180,5 +179,15 @@
   "DNDAMIGOS.SessionSync.TokenFailed": "portrait didn't upload",
   "DNDAMIGOS.SessionSync.NothingTicked": "Nothing was ticked, so nothing was sent.",
   "DNDAMIGOS.SessionSync.AllDone": "End of Session Sync finished: the site is up to date.",
-  "DNDAMIGOS.SessionSync.DoneWithProblems": "Finished with {count} problem(s); see the lines marked above."
+  "DNDAMIGOS.SessionSync.DoneWithProblems": "Finished with {count} problem(s); see the lines marked above.",
+  "DNDAMIGOS.Common.Save": "Save",
+  "DNDAMIGOS.Common.Ok": "OK",
+  "DNDAMIGOS.SettingsMenu.TestConnection": "Test Connection",
+  "DNDAMIGOS.Setup.Title": "D&D Amigos Connector — Setup Needed",
+  "DNDAMIGOS.Setup.Open": "Open Connection Settings",
+  "DNDAMIGOS.Setup.Later": "Later",
+  "DNDAMIGOS.Setup.Body": "<p>This module isn't connected to the D&D Amigos website yet. To finish setup:</p><ol style=\"padding-left: 20px; margin: 0 0 10px;\"><li>On the website, an admin sets <code>FOUNDRY_API_KEY</code> and <code>FOUNDRY_ORIGIN</code> in <code>engine/config.php</code> (one time, for the whole group).</li><li>Here, open <strong>Configure Settings → D&D Amigos Connection</strong> and fill in the Site URL, that same API Key, and the numeric Journal ID for this campaign (in the site's URL, e.g. <code>journal.php?id=5</code> → <code>5</code>).</li><li>Click <strong>Test Connection</strong> to check it before saving.</li></ol><p>Then every player (not just the GM) opens <strong>Configure Settings → My D&D Amigos Identity</strong> once on each of their devices and picks their own name. That's how session posts, notes and character syncs know who they're from.</p>",
+  "DNDAMIGOS.Import.PersonaLevel": "Level {level}",
+  "DNDAMIGOS.Import.PersonaStats1": "HP {hp} · Gold {gold} · Turns {turns}",
+  "DNDAMIGOS.Import.PersonaStats2": "Attack {attack} · Defense {defense} · Cargo {cargo}"
 }

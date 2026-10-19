@@ -75,12 +75,6 @@
   min-height: 1.2em;
 }
 
-.dnd-amigos-lookup-results {
-  max-height: 320px;
-  overflow-y: auto;
-  margin-top: 8px;
-}
-
 .dnd-amigos-lookup-entry {
   padding: 4px 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.15);

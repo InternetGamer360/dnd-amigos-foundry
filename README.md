@@ -69,10 +69,8 @@ divider so it's easy to find without being mistaken for one of them.
   permission on the Party actor to open its inventory. The first time,
   the GM also gets **Import Site Loot**: it copies the old site-side
   ledger into the stash as treasure items (value split per item, notes
-  as the description) and syncs. Up to 1.5.x, Manage Loot edited the
-  site ledger directly and could mirror items onto a separate PF2e
-  "Loot" actor; both are gone, and the Loot Actor setting with them.
-- **NPCs & Places** (open to everyone; was "Look Up" before v1.1) —
+  as the description) and syncs.
+- **NPCs & Places** (open to everyone) —
   search the campaign's NPCs and Places, open one to read it (portrait,
   tagline, description), and add **notes** the whole party can see.
   Notes are shared with the website: anything written here appears on
@@ -200,69 +198,34 @@ open **Configure Settings → D&D Amigos Connection** and fill in:
 Click **Test Connection** before saving — it'll tell you the linked
 journal's name if everything's correct, or exactly what failed if not.
 
-## Things worth knowing before relying on this
+## Troubleshooting and known limits
 
-**New in 1.7.0:** End of Session Sync. Exercised against stand-ins shaped like the PF2e objects and the site's real endpoints; the window had not been clicked through in the live world when this shipped.  the & button sits 14px up from the bottom edge, and with the sidebar collapsed it steps just left of the floating chat box instead of covering it (both checked in the live world). **New in 1.6.1:** first click-through in the group's live v14 world (as a Player-role user): the & button, the menu, the Party Stash window, Open Party Inventory (PF2e's "Stash" tab) and a private `/nethys` all worked; the & button now sits at the bottom-right of v14's chat pop-up column, right beside the chat box (1.6.0 put it 300px further left). Sync Loot to Site itself has not been pressed in the live world yet. **New in 1.6.0:** loot moved into Foundry (see Manage Loot above). The party-stash reading uses PF2e 8.x's own Party actor API (`game.actors.party`, `inventory.coins`, `totalWealth`, each item's `assetValue`), checked against the PF2e code running on the group's server, and the site side was tested end to end against a local copy of the site; the window itself had not yet been clicked through in the live world when this shipped.
+Version history is in [CHANGELOG.md](CHANGELOG.md).
 
-**New in 1.3.0:** every window now uses Foundry's newer window type (DialogV2) instead of the deprecated Dialog/FormApplication, which removes the deprecation warnings and future-proofs the module. Nothing about what the windows do changed. It was exercised against a stand-in Foundry, not a live world, so if any window misbehaves, turn on **Use legacy windows** in Configure Settings to get the old ones back. **New in 1.2.0:** pushing a character now saves the WHOLE actor on the site (every item with quantities and containers, spells, feats, skills, conditions, coins, biography), shown as a readable sheet on the PCs page, and Pull from Site can restore all of it onto an actor. Exercised against the site's endpoints with a hand-built actor, but the restore itself (Foundry's own Import Data path) has not been run in a live world. **New in 1.1.0:** NPCs & Places syncing and shared notes (pull, push, portraits, notes window). The data logic was exercised end to end against the real site endpoints, but the notes window itself was written without a live Foundry to click through, so treat its first real use as the test.
+- **A window won't open or looks broken** on a newer Foundry: turn on
+  **Use legacy windows** (Configure Settings → D&D Amigos Connector, per
+  browser). Every window goes through `scripts/windows.js`, which uses
+  Foundry's `DialogV2` and falls back to the old `Dialog` on its own if a
+  new-style window fails to build.
+- **The & button or the journal button is missing or misplaced:** the &
+  button's placement is `placeCanvasButton()` in `scripts/main.js` (plus
+  its rules in `styles/module.css`); the journal button looks for
+  `.directory-header .header-actions`, falling back to `.directory-header`.
+  Foundry's layout has moved between versions, so those are the places to
+  adjust. Players can hide the & button with **Show the D&D Amigos
+  button**.
+- **Pull from Site only sets the basics** (name, level, HP, ability
+  modifiers) unless the site has a full Foundry snapshot of the character;
+  `buildBasicPf2eUpdate()` in `scripts/main.js` holds the PF2e field paths
+  if a PF2e update moves them. For a Pathbuilder-imported character, the
+  raw Pathbuilder export is copied to your clipboard for PF2e's own
+  "Import from Pathbuilder".
+- **Moving loot needs a GM online:** players whose character is a member
+  of The Party can move items in and out of its inventory, but PF2e
+  routes those moves through the GM's client.
+- **Character syncs and NPCs & Places need an identity** (My D&D Amigos
+  Identity), and the site only accepts a character push from the
+  character's owner or the campaign's DM.
 
-This has been in real use by the group since v0.2.1 — sync (pull,
-push, and create), the old Add/Manage Loot, Post Session Update, Look Up,
-Import, and the identity setting have all been clicked through against
-a real Foundry v14 instance at some point in this module's life.
-
-That said, this module changes often, and a version bump doesn't imply
-a fresh click-through of everything — only what a given change actually
-touched gets exercised again in practice. Everything genuinely new only
-gets verified server-side here (the site's own endpoints tested
-directly against a local copy of the site) plus careful manual
-read-throughs of the JS, since there's no live Foundry instance to test
-against directly. As of this writing, that applies to the newest layer
-on top of the confirmed core above:
-- **The single "D&D Amigos" menu** (`openAmigosMenu()` in
-  `scripts/main.js`) — replacing what used to be several separate
-  sidebar buttons with one that opens a Dialog listing them instead,
-  including a "How to Use This Module" reference at the top
-  (`openHelpDialog()`). Built on the same window helper (`scripts/windows.js`) the rest of the
-  module already uses.
-- **The Sync button's label** — renamed to the direction-neutral "D&D
-  Amigos Sync" after real players found "Sync from D&D Amigos"
-  confusing once it could also push. Cosmetic only; the underlying pull/
-  push/create logic is part of the confirmed core above.
-
-Worth a real click-through of that list specifically before trusting it
-blindly — everything below this point is the older, already-confirmed
-detail.
-
-1. **The PF2e actor field mapping** (`buildBasicPf2eUpdate()` in
-   `scripts/main.js`) only sets name/level/HP/ability modifiers on
-   purpose — pf2e actors build ancestry/background/class/skills/feats
-   from real compendium Items, and guessing at that mapping blind would
-   be far less reliable than pf2e's own **"Import from Pathbuilder"**
-   feature (already built into character creation in the pf2e system).
-   So for any character imported from Pathbuilder, syncing also copies
-   the complete raw Pathbuilder export to your clipboard and saves it
-   on the actor's flags — paste it into that native importer on the
-   same actor for the full build. If the *basic* fields (level/HP/
-   ability mods) don't show up correctly, the exact `system.*` paths in
-   `buildBasicPf2eUpdate()` are the one place to check — pf2e's data
-   model can shift between versions.
-2. **Where the "D&D Amigos" button lands** — `renderJournalDirectory`
-   in `scripts/main.js` looks for `.directory-header .header-actions`,
-   falling back to `.directory-header`. Foundry's sidebar markup has
-   changed slightly across versions; if the button doesn't show up (or
-   lands somewhere awkward), that selector is the thing to adjust.
-3. **The window types** — every window goes through `scripts/windows.js`,
-   which uses Foundry's newer `DialogV2` and falls back to the old `Dialog`
-   if a new-style window fails to build. If a window ever won't open or looks
-   broken on a future Foundry, the per-browser setting **Use legacy windows**
-   (Configure Settings → D&D Amigos Connector) switches back to the old
-   type until the module catches up.
-
-`module.json`'s `compatibility.minimum`/`verified` is currently `12`/
-`14`, matching the group's actual Foundry instance — adjust if that
-ever changes.
-
-Everything else — settings storage, the API client, the dialogs, the
-journal-entry import — uses stable, long-standing Foundry APIs
-(`game.settings`, `DialogV2`, `JournalEntry`) and should work as written.
+`module.json`'s `compatibility` is minimum `12`, verified `14` (Foundry
+treats a whole-number `verified` as every build of that generation).

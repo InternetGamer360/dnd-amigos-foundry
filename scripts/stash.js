@@ -17,6 +17,7 @@
 // import each other.
 
 import { openDialog, confirmDialog } from './windows.js';
+import { esc, t, getParty, formatCp } from './util.js';
 
 let deps = null;
 
@@ -24,8 +25,6 @@ export function configureStash(d) {
   deps = d;
 }
 
-const esc = (s) => foundry.utils.escapeHTML(String(s ?? ''));
-const t = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localize(key));
 
 const TYPE_LABELS = {
   weapon: 'Weapon',
@@ -39,25 +38,7 @@ const TYPE_LABELS = {
   book: 'Book',
 };
 
-/** The world's PF2e Party actor (PF2e's own "active party", else the first party), or null. */
-function getParty() {
-  return game.actors?.party ?? game.actors?.find?.((a) => a.type === 'party') ?? null;
-}
-
 const copperOf = (coins) => Number(coins?.copperValue ?? 0);
-
-/** 12345 -> "123 gp 4 sp 5 cp" */
-function formatCp(cp) {
-  cp = Math.max(0, Math.round(cp));
-  const parts = [];
-  const gp = Math.floor(cp / 100);
-  const sp = Math.floor((cp % 100) / 10);
-  const c = cp % 10;
-  if (gp) parts.push(`${gp.toLocaleString()} gp`);
-  if (sp) parts.push(`${sp} sp`);
-  if (c) parts.push(`${c} cp`);
-  return parts.length ? parts.join(' ') : '0 gp';
-}
 
 function formatCoins(coins) {
   const parts = ['pp', 'gp', 'sp', 'cp'].filter((d) => Number(coins?.[d])).map((d) => `${Number(coins[d]).toLocaleString()} ${d}`);
@@ -108,7 +89,7 @@ function stashSummary(party) {
   };
 }
 
-export function openPartyInventory() {
+function openPartyInventory() {
   const party = getParty();
   if (!party) {
     ui.notifications.warn(t('DNDAMIGOS.Stash.NoParty'));
@@ -168,7 +149,7 @@ function cpToPrice(cp) {
  * told the import happened and the stash is synced, which switches the site's loot page
  * over to the Foundry snapshot. Returns true if it ran.
  */
-export async function importSiteLoot() {
+async function importSiteLoot() {
   if (!game.user.isGM) return false;
   const party = getParty();
   if (!party) {

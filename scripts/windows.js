@@ -15,7 +15,7 @@
 // Escape hatch: the client setting "Use legacy windows" forces the old Dialog back, and
 // any failure to build a new-style window falls back to the old one automatically.
 
-const MODULE_ID = 'dnd-amigos-connector';
+import { MODULE_ID } from './util.js';
 
 /* --------------------------------------------------------------------
    MiniQuery — the handful of jQuery methods the windows use, over plain
@@ -87,7 +87,7 @@ class MiniQuery {
   }
 }
 
-export function wrap(element) { return new MiniQuery([element]); }
+function wrap(element) { return new MiniQuery([element]); }
 
 /* --------------------------------------------------------------------
    Which kind of window

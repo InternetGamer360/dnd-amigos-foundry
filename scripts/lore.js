@@ -19,6 +19,7 @@
 // import each other.
 
 import { openDialog } from './windows.js';
+import { esc, t } from './util.js';
 
 let deps = null;
 
@@ -31,9 +32,7 @@ const KINDS = {
   place: { title: 'D&D Amigos: Places', label: 'Place', plural: 'Places', uploads: 'places', infoKey: 'places', newName: 'New Place' },
 };
 
-const esc = (s) => foundry.utils.escapeHTML(String(s ?? ''));
 
-const t = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localize(key));
 
 /* --------------------------------------------------------------------
    Page content <-> lore fields.
@@ -42,7 +41,7 @@ const t = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localiz
    text for the website, which shows plain text.
 -------------------------------------------------------------------- */
 
-export function htmlToLore(html) {
+function htmlToLore(html) {
   const doc = new DOMParser().parseFromString(`<div>${html || ''}</div>`, 'text/html');
   const root = doc.body.firstElementChild;
   root.querySelectorAll('img, figure, script, style').forEach((n) => n.remove());
@@ -74,7 +73,7 @@ export function htmlToLore(html) {
   return { tagline, description };
 }
 
-export function loreToHtml({ tagline, description, imageUrl }) {
+function loreToHtml({ tagline, description, imageUrl }) {
   const paragraphs = String(description || '')
     .split(/\n{2,}/)
     .map((p) => p.trim())
@@ -89,7 +88,7 @@ export function loreToHtml({ tagline, description, imageUrl }) {
 }
 
 /** A small stable hash of a page's text, to tell "unchanged since we wrote it" from "edited in Foundry". */
-export function hashText(s) {
+function hashText(s) {
   let h = 2166136261;
   const str = String(s || '').replace(/\s+/g, ' ').trim();
   for (let i = 0; i < str.length; i++) {
@@ -100,7 +99,7 @@ export function hashText(s) {
 }
 
 /** The first image in a page's HTML (its portrait), or ''. */
-export function firstImageSrc(html) {
+function firstImageSrc(html) {
   const m = /<img[^>]+src=["']([^"']+)["']/i.exec(html || '');
   return m ? m[1] : '';
 }
@@ -293,7 +292,7 @@ export async function pushLoreCore() {
  * large, resizable window with the page list and the pencil to edit) rather than the
  * bare page sheet, which is a tiny window that is hard to resize.
  */
-export async function createLorePage(kind) {
+async function createLorePage(kind) {
   if (!game.user.isGM) return;
   const journal = await ensureLoreJournal(kind);
   const [page] = await journal.createEmbeddedDocuments('JournalEntryPage', [

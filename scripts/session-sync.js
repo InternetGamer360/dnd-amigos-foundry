@@ -13,6 +13,7 @@
 // character push in main.js, handed over through configureSessionSync()).
 
 import { openDialog } from './windows.js';
+import { esc, t, getParty, formatCp } from './util.js';
 import { syncLootToSite } from './stash.js';
 import { pushLoreCore, countLorePages } from './lore.js';
 
@@ -22,29 +23,11 @@ export function configureSessionSync(d) {
   deps = d;
 }
 
-const esc = (s) => foundry.utils.escapeHTML(String(s ?? ''));
-const t = (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localize(key));
-
-function getParty() {
-  return game.actors?.party ?? game.actors?.find?.((a) => a.type === 'party') ?? null;
-}
 
 /** The characters this user syncs: every character in The Party for the GM, their own for a player. */
 function characterTargets(party) {
   const members = (party?.members ?? []).filter((a) => a.type === 'character');
   return game.user.isGM ? members : members.filter((a) => a.isOwner);
-}
-
-function formatCp(cp) {
-  cp = Math.max(0, Math.round(cp));
-  const gp = Math.floor(cp / 100);
-  const sp = Math.floor((cp % 100) / 10);
-  const c = cp % 10;
-  const parts = [];
-  if (gp) parts.push(`${gp.toLocaleString()} gp`);
-  if (sp) parts.push(`${sp} sp`);
-  if (c) parts.push(`${c} cp`);
-  return parts.length ? parts.join(' ') : '0 gp';
 }
 
 let syncWindow = null;

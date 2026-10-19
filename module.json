@@ -2,7 +2,7 @@
   "id": "dnd-amigos-connector",
   "title": "D&D Amigos Connector",
   "description": "Manual, click-to-run sync between this Foundry world and the D&D Amigos website, all from one \"D&D Amigos\" menu (a black-and-red \"&\" button in the bottom-right corner of the game screen, next to chat, or the journal sidebar button): pull a Character Vault entry onto an actor sheet, push an actor's current stats and portrait back up to overwrite it (any campaign DM can push too, not just the character's owner), or create one from the actor if it doesn't exist yet; post a session update to the site's journal/Discord; keep party loot in the PF2e Party actor's inventory and sync a read-only snapshot of it to the site's Party Loot page; browse the campaign's NPCs and Places and add shared notes to them; write NPCs and Places here and push them to the site; and import Places/NPCs/Loot/E.Y.F.F.O. stats as journal entries. Ask Nethys, the group's rules helper, PF2e and Starfinder 2e rules questions answered from Archives of Nethys, with /nethys in chat or its own window. End of Session Sync sends the stash, the party's characters and NPCs & Places in one go. Nothing here runs automatically — every action is a button you click.",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "compatibility": {
     "minimum": "12",
     "verified": "14"
@@ -36,5 +36,5 @@
   ],
   "url": "https://github.com/InternetGamer360/dnd-amigos-foundry",
   "manifest": "https://github.com/InternetGamer360/dnd-amigos-foundry/releases/latest/download/module.json",
-  "download": "https://github.com/InternetGamer360/dnd-amigos-foundry/releases/download/v1.7.1/module.zip"
+  "download": "https://github.com/InternetGamer360/dnd-amigos-foundry/releases/download/v1.7.2/module.zip"
 }
