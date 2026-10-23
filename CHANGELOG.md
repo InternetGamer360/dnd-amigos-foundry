@@ -2,6 +2,10 @@
 
 All notable changes to the D&D Amigos Connector. Newest first.
 
+## 1.9.0 — 2026-10-22
+- **Break Room.** The GM starts a break from the D&D Amigos menu (**Break**) or with `/break 10`: pick 5, 10, 15, 20 or 30 minutes, or type any number. The game pauses and a panel at the top of the screen shows the countdown, when you're back, and every player as **Back**, **Away** or **Offline**. Players press **I'm back** (or type `/back`; `/brb` steps away again). The GM can add 5 minutes, ring a bell, or end the break (asked first if people are still away). When everyone is back the break ends on its own and the game unpauses (a setting turns that off). Reloading mid-break puts the panel back.
+- **Plays nicely with AFK Tavern.** If AFK Tavern is active, Break and `/break` open its break room instead, so the minigames keep working; a setting forces this module's room. Each break is also logged, and the module announces `dndAmigosBreakStart`, `dndAmigosBreakEnd`, `dndAmigosPlayerAway` and `dndAmigosPlayerBack` hooks, groundwork for the session flow.
+
 ## 1.8.1 — 2026-10-19
 - **Session Recap is much less work for the GM.** No form first: opening it starts Nethys writing straight away, then shows **one preview** of the finished entry. Most nights: read it, press **Post**. **Edit** turns it into one editable box; **Rewrite…** takes an optional line (a fact Nethys missed, or "shorter") and redraws the whole recap. The time range is one line with a **change** link. By the dice stays exact.
 

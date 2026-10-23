@@ -48,6 +48,15 @@ divider so it's easy to find without being mistaken for one of them.
   since the site only takes a character push from its owner or the DM.
   **Players:** the Party stash and their own character(s) in The Party.
   The same pieces as the separate buttons, so nothing new on the site.
+- **Break** (in the menu, or `/break 10` in chat). The GM starts a break with a
+  countdown; the game pauses, and a panel at the top shows the time left and every
+  player as Back, Away or Offline. Players press **I'm back** (`/back`, or `/brb`
+  to step away again); the break ends when everyone is back, the time is up and the
+  GM presses End, or the GM ends it early. If the **AFK Tavern** module is active,
+  Break opens its break room instead so its minigames keep working (the Break room
+  setting can force this module's own). Breaks are logged and announced through the
+  hooks `dndAmigosBreakStart`, `dndAmigosBreakEnd`, `dndAmigosPlayerAway` and
+  `dndAmigosPlayerBack`.
 - **Session Recap** (GM only; in the menu and linked from End of Session
   Sync) — Nethys drafts a session-log entry from the night's chat as soon
   as the window opens; there's no form to fill in first. The session is

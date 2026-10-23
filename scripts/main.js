@@ -13,6 +13,7 @@ import { configureNethys, openNethysWindow } from './nethys.js';
 import { configureStash, openStashWindow } from './stash.js';
 import { configureSessionSync, openSessionSync } from './session-sync.js';
 import { configureRecap, openRecapWindow } from './recap.js';
+import { openBreakMenu } from './break.js';
 import { MODULE_ID, esc as attr } from './util.js';
 
 
@@ -1007,6 +1008,7 @@ function openAmigosMenu() {
     { action: 'manage-loot', icon: 'fa-sack-dollar', labelKey: 'DNDAMIGOS.JournalDirectory.ManageLoot', onClick: openStashWindow, gold: true },
     { action: 'lookup', icon: 'fa-users', labelKey: 'DNDAMIGOS.JournalDirectory.Lookup', onClick: openLoreDialog },
     { action: 'nethys', icon: 'fa-hat-wizard', labelKey: 'DNDAMIGOS.JournalDirectory.AskNethys', onClick: openNethysWindow },
+    { action: 'break', icon: 'fa-mug-hot', labelKey: 'DNDAMIGOS.JournalDirectory.Break', onClick: openBreakMenu },
   ];
   if (game.user.isGM) {
     entries.push({ action: 'session-recap', icon: 'fa-feather', labelKey: 'DNDAMIGOS.JournalDirectory.SessionRecap', onClick: openRecapWindow });
@@ -1056,6 +1058,7 @@ function openHelpDialog() {
     ['DNDAMIGOS.Help.ManageLoot.Title', 'DNDAMIGOS.Help.ManageLoot.Body'],
     ['DNDAMIGOS.Help.Lookup.Title', 'DNDAMIGOS.Help.Lookup.Body'],
     ['DNDAMIGOS.Help.Nethys.Title', 'DNDAMIGOS.Help.Nethys.Body'],
+    ['DNDAMIGOS.Help.Break.Title', 'DNDAMIGOS.Help.Break.Body'],
     ['DNDAMIGOS.Help.PushLore.Title', 'DNDAMIGOS.Help.PushLore.Body'],
     ['DNDAMIGOS.Help.ImportInfo.Title', 'DNDAMIGOS.Help.ImportInfo.Body'],
     ['DNDAMIGOS.Help.Identity.Title', 'DNDAMIGOS.Help.Identity.Body'],

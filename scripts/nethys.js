@@ -18,7 +18,7 @@
 // configureNethys(), so the two files never import each other.
 
 import { openDialog } from './windows.js';
-import { esc, t } from './util.js';
+import { esc, t, chatText } from './util.js';
 
 let deps = null;
 
@@ -107,21 +107,6 @@ async function askFromChat(question, isPublic) {
       [`flags.${deps.MODULE_ID}.nethys`]: { question, pending: false, failed: true },
     });
   }
-}
-
-/**
- * The chat box's message as plain text. Foundry v14's chat input hands the chatMessage hook
- * HTML ("<p>/nethys ...</p>", "&amp;" for "&", <br> for new lines), and earlier versions plain
- * text; this reads either the way Foundry's own command parser does.
- */
-function chatText(message) {
-  const raw = String(message ?? '');
-  if (!/[<&]/.test(raw)) return raw.trim();
-  const template = document.createElement('template');
-  template.innerHTML = raw;
-  template.content.querySelectorAll('br').forEach((br) => br.replaceWith('\n'));
-  template.content.querySelectorAll('p').forEach((p) => p.append('\n'));
-  return template.content.textContent.trim();
 }
 
 // "/nethys question" and "/nethys! question" — handled here and kept out of the normal chat.

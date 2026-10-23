@@ -28,3 +28,18 @@ export function formatCp(cp) {
   if (c) parts.push(`${c} cp`);
   return parts.length ? parts.join(' ') : '0 gp';
 }
+
+/**
+ * The chat box's message as plain text. Foundry v14's chat input hands the chatMessage hook
+ * HTML ("<p>/nethys ...</p>", "&amp;" for "&", <br> for new lines), and earlier versions plain
+ * text; this reads either the way Foundry's own command parser does.
+ */
+export function chatText(message) {
+  const raw = String(message ?? '');
+  if (!/[<&]/.test(raw)) return raw.trim();
+  const template = document.createElement('template');
+  template.innerHTML = raw;
+  template.content.querySelectorAll('br').forEach((br) => br.replaceWith('\n'));
+  template.content.querySelectorAll('p').forEach((p) => p.append('\n'));
+  return template.content.textContent.trim();
+}

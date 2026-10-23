@@ -549,3 +549,133 @@
 .dnd-amigos-recap-count a {
   cursor: pointer;
 }
+
+/* Break Room (scripts/break.js): the panel at the top of the screen during a break. */
+.dnd-amigos-break {
+  position: fixed;
+  top: 52px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 80;
+  width: min(440px, 92vw);
+  padding: 10px 14px 12px;
+  border: 1px solid #c9a227;
+  border-radius: 8px;
+  background: rgba(22, 20, 28, 0.94);
+  color: #ece6d8;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.55);
+  font-size: 13px;
+}
+
+.dnd-amigos-break.dab-over {
+  border-color: #c0392b;
+  box-shadow: 0 0 0 2px rgba(192, 57, 43, 0.35), 0 4px 18px rgba(0, 0, 0, 0.55);
+}
+
+.dnd-amigos-break .dab-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.dnd-amigos-break .dab-head i {
+  color: #c9a227;
+}
+
+.dnd-amigos-break .dab-clock {
+  margin-left: auto;
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #f2d675;
+}
+
+.dnd-amigos-break.dab-over .dab-clock {
+  color: #ff8a7a;
+}
+
+.dnd-amigos-break .dab-until {
+  opacity: 0.7;
+  font-size: 12px;
+}
+
+.dnd-amigos-break .dab-roster {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+
+.dnd-amigos-break .dab-roster li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.dnd-amigos-break .dab-roster li.dab-me .dab-name {
+  text-decoration: underline;
+}
+
+.dnd-amigos-break .dab-roster em {
+  font-size: 11px;
+  opacity: 0.75;
+  font-style: normal;
+}
+
+.dnd-amigos-break .dab-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #8a8a8a;
+  box-sizing: border-box;
+}
+
+.dnd-amigos-break .dab-back .dab-dot {
+  background: #4caf50;
+  border-color: #4caf50;
+}
+
+.dnd-amigos-break .dab-away .dab-dot {
+  background: transparent;
+  border-color: #f0a030;
+}
+
+.dnd-amigos-break .dab-offline {
+  opacity: 0.5;
+}
+
+.dnd-amigos-break .dab-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.dnd-amigos-break .dab-actions button {
+  flex: 0 1 auto;
+  width: auto;
+  line-height: 1.6;
+  padding: 0 10px;
+}
+
+.dnd-amigos-break .dab-actions .dab-primary {
+  flex: 1 1 auto;
+  background: #2e7d32;
+  border-color: #4caf50;
+  color: #fff;
+}
+
+.dab-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.dab-presets button {
+  flex: 1 1 auto;
+  width: auto;
+}
