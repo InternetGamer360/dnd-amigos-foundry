@@ -11,6 +11,9 @@
 //   - items made under a different Foundry or system version than this world runs (a weapon
 //     dragged over from an older world keeps its old data layout until something migrates it);
 //   - references to things that are not on this actor: a container, or the item that granted it;
+//   - rule elements the system could not use (an unknown key, or one it set aside as invalid);
+//   - carry-state conflicts: "held" with no hands or hands without "held", more than two armors
+//     worn, more hands in use than a character has, more invested items than the usual limit;
 //   - weapons that are carried but have no Strike on the sheet;
 //   - when the actor is linked to the site: items that are missing, extra or different compared
 //     with the site's last saved copy.
@@ -54,6 +57,56 @@ function changedKeys(local, site) {
   return out;
 }
 
+/** Rule elements the system could not use: an unknown key, or one it set aside as invalid. */
+function ruleFindings(actor, add) {
+  const registry = game.pf2e?.RuleElements?.all ?? game[game.system.id]?.RuleElements?.all ?? null;
+  for (const item of actor.items) {
+    const raw = Array.isArray(item.system?.rules) ? item.system.rules : [];
+    if (!raw.length) continue;
+    const unknown = raw
+      .map((r) => (typeof r?.key === 'string' ? r.key : null))
+      .filter((key, i) => key === null || (registry && !registry[key.replace(/^PF2E\.RuleElement\./, '')]))
+      .map((key) => key ?? '(no key)');
+    if (unknown.length) add('problem', t('DNDAMIGOS.Check.RuleUnknown', { name: item.name, keys: [...new Set(unknown)].join(', ') }));
+
+    const ignored = Array.isArray(item.rules) ? item.rules.filter((r) => r?.ignored) : [];
+    if (ignored.length) {
+      const keys = [...new Set(ignored.map((r) => String(r.key ?? '?').replace(/^PF2E\.RuleElement\./, '')))].join(', ');
+      add('problem', t('DNDAMIGOS.Check.RuleIgnored', { name: item.name, count: ignored.length, keys }));
+    }
+  }
+}
+
+/** Contradictory or over-the-limit carrying: hands, worn armor, invested items. */
+function carryFindings(actor, add) {
+  let hands = 0;
+  const wornArmor = [];
+  const invested = [];
+  const stale = [];
+  for (const item of actor.items) {
+    const e = item.system?.equipped;
+    if (!e) continue;
+    const held = e.carryType === 'held';
+    const handsHeld = Number(e.handsHeld ?? 0);
+    if (held !== (handsHeld > 0)) {
+      add('problem', t(held ? 'DNDAMIGOS.Check.HeldNoHands' : 'DNDAMIGOS.Check.HandsNotHeld', { name: item.name, carry: e.carryType ?? '?', hands: handsHeld }));
+    }
+    if (held) hands += handsHeld;
+    if (item.type === 'armor') {
+      if (e.carryType === 'worn' && e.inSlot) wornArmor.push(item.name);
+      if (held) add('note', t('DNDAMIGOS.Check.ArmorHeld', { name: item.name }));
+    }
+    if (e.invested === true) {
+      if (item.system?.traits?.value?.includes?.('invested')) invested.push(item.name);
+      else stale.push(item.name);
+    }
+  }
+  if (wornArmor.length > 1) add('problem', t('DNDAMIGOS.Check.TwoArmors', { names: wornArmor.join(', ') }));
+  if (hands > 2) add('note', t('DNDAMIGOS.Check.TooManyHands', { hands }));
+  if (invested.length > 10) add('note', t('DNDAMIGOS.Check.OverInvested', { count: invested.length }));
+  if (stale.length) add('note', t('DNDAMIGOS.Check.StaleInvested', { count: stale.length, examples: stale.slice(0, 3).join(', ') }));
+}
+
 /** The checks that need nothing but the actor. Returns [{ level: 'problem' | 'note', text }]. */
 function localFindings(actor) {
   const found = [];
@@ -85,6 +138,9 @@ function localFindings(actor) {
       if (grant?.id && !ids.has(grant.id)) add('problem', t('DNDAMIGOS.Check.NoGrant', { name: item.name, slug }));
     }
   }
+
+  ruleFindings(actor, add);
+  carryFindings(actor, add);
 
   // A carried weapon with no Strike. Stowed or dropped weapons are not supposed to have one.
   const strikes = Array.isArray(actor.system?.actions) ? actor.system.actions : null;

@@ -2,6 +2,9 @@
 
 All notable changes to the D&D Amigos Connector. Newest first.
 
+## 1.12.0 — 2026-10-30
+- **Check sheet: rule elements and carry-state conflicts.** It now reports rule elements the system could not use (an unknown key, or one the system set aside as invalid), items whose carry state and hands disagree (marked held with no hands, or hands counted while not held), more than one armor worn, more than two hands in use, and more invested items than the usual limit of 10. Invested items are counted by the invested trait, since stale invested flags on things like chalk are common. Hands and invested counts are listed as "worth knowing", not as problems, because plenty of working sheets exceed them.
+
 ## 1.11.0 — 2026-10-30
 - **Check sheet.** A stethoscope button in the header menu of Pathfinder 2e / Starfinder 2e character sheets. It lists the usual causes of a misbehaving sheet: items Foundry marked invalid, items made under an older Foundry or system version (such as a weapon dragged in from an older world), items pointing at a container or granting item that isn't on the character, and carried weapons with no Strike. If the character is linked to the site it also compares every item with the site's saved copy and can **Restore** one item from it (or **Add** one that is missing) after a confirmation, so a single bad weapon no longer needs the whole sheet pulled again. **Copy report** puts the findings, versions and active modules on the clipboard. Nothing changes until you confirm.
 

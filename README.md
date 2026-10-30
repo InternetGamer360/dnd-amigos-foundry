@@ -60,7 +60,8 @@ divider so it's easy to find without being mistaken for one of them.
 - **Check sheet** (stethoscope in a Pathfinder 2e / Starfinder 2e character sheet's header
   menu). Lists the usual causes of a misbehaving sheet (invalid items, items from an
   older Foundry or system version, dangling container or grant links, carried weapons
-  with no Strike) and, for a linked character, compares each item with the site's saved
+  with no Strike, rule elements the system couldn't use, carry-state conflicts) and,
+  for a linked character, compares each item with the site's saved
   copy. Restore puts one item back the way the site has it; Add brings back a missing
   one. Copy report copies everything for whoever is fixing it.
 - **Play E.Y.F.F.O.** (in the menu, on the Break Room panel, and as a game card in
