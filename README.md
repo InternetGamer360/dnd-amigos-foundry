@@ -57,6 +57,12 @@ divider so it's easy to find without being mistaken for one of them.
   setting can force this module's own). Breaks are logged and announced through the
   hooks `dndAmigosBreakStart`, `dndAmigosBreakEnd`, `dndAmigosPlayerAway` and
   `dndAmigosPlayerBack`.
+- **Import a character** (in the menu). Brings a character from another campaign
+  into this one, for example a Part 1 character into Part 2. The list shows the
+  site's other campaigns' characters that have a full saved sheet. The site makes a
+  separate copy in this campaign (the original is untouched and nothing links the
+  two), and a new actor is built here from the full sheet, linked to the copy so
+  Pull and Push work as usual. Needs permission to create actors in the world.
 - **Session Recap** (GM only; in the menu and linked from End of Session
   Sync) — Nethys drafts a session-log entry from the night's chat as soon
   as the window opens; there's no form to fill in first. The session is
