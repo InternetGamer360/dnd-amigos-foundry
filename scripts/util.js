@@ -43,3 +43,26 @@ export function chatText(message) {
   template.content.querySelectorAll('p').forEach((p) => p.append('\n'));
   return template.content.textContent.trim();
 }
+
+/**
+ * Our sheet-header buttons show only an icon (the sheet header is crowded with other modules'
+ * buttons), so the name goes in a hover tooltip. Foundry's old-style window headers have no
+ * tooltip of their own for a button, so this adds one after the sheet draws.
+ */
+const HEADER_TIPS = {
+  'dnd-amigos-sync': 'DNDAMIGOS.ActorSheet.HeaderButton',
+  'dnd-amigos-check': 'DNDAMIGOS.Check.HeaderButton',
+};
+
+export function tipHeaderButtons(app) {
+  const root = app?.element?.[0] ?? app?.element;
+  if (!root?.querySelectorAll) return;
+  for (const [cls, key] of Object.entries(HEADER_TIPS)) {
+    root.querySelectorAll(`.window-header .${cls}`).forEach((el) => {
+      const text = game.i18n.localize(key);
+      el.title = text;
+      el.dataset.tooltip = text;
+      el.setAttribute('aria-label', text);
+    });
+  }
+}

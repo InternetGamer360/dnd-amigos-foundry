@@ -337,7 +337,7 @@ async function applyFix(actor, d) {
 Hooks.on('getActorSheetHeaderButtons', (sheet, buttons) => {
   if (sheet.actor?.type !== 'character' || !SUPPORTED.includes(game.system.id)) return;
   buttons.push({
-    label: game.i18n.localize('DNDAMIGOS.Check.HeaderButton'),
+    label: '', // icon only: the name is the hover tooltip (see tipHeaderButtons in util.js)
     class: 'dnd-amigos-check',
     icon: 'fa-solid fa-stethoscope',
     onclick: () => openSheetCheck(sheet.actor),

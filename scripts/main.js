@@ -17,7 +17,7 @@ import { openBreakMenu } from './break.js';
 import { configureEyffo, openEyffo } from './eyffo.js';
 import { configureSheetCheck } from './sheet-check.js';
 import { configureCharacterImport, openCharacterImport } from './character-import.js';
-import { MODULE_ID, esc as attr } from './util.js';
+import { MODULE_ID, esc as attr, tipHeaderButtons } from './util.js';
 
 
 // NPCs & Places (scripts/lore.js) gets the pieces of this file it needs handed to it,
@@ -436,12 +436,14 @@ class IdentitySettingsMenu extends MenuWindow {
 Hooks.on('getActorSheetHeaderButtons', (sheet, buttons) => {
   if (sheet.actor?.type !== 'character') return;
   buttons.unshift({
-    label: game.i18n.localize('DNDAMIGOS.ActorSheet.HeaderButton'),
+    label: '', // icon only: the name is the hover tooltip (see tipHeaderButtons in util.js)
     class: 'dnd-amigos-sync',
-    icon: 'fa-solid fa-arrows-rotate',
+    icon: 'fa-solid fa-arrow-right-arrow-left',
     onclick: () => syncActorFromVault(sheet.actor),
   });
 });
+
+Hooks.on('renderActorSheet', (app) => tipHeaderButtons(app));
 
 // The same button for sheets built on the newer window type, whose header menu is a list of controls
 // (an `action` the sheet runs, or an `onClick` of our own). Harmless where no sheet fires this hook.
@@ -451,7 +453,7 @@ Hooks.on('getHeaderControlsActorSheetV2', (sheet, controls) => {
   controls.unshift({
     action: 'dndAmigosSync',
     label: 'DNDAMIGOS.ActorSheet.HeaderButton',
-    icon: 'fa-solid fa-arrows-rotate',
+    icon: 'fa-solid fa-arrow-right-arrow-left',
     onClick: () => syncActorFromVault(sheet.actor),
   });
 });
