@@ -265,7 +265,7 @@
   "DNDAMIGOS.Break.Settings.Sound.Hint": "Play a sound when a break starts, the bell rings and time is up. This browser only.",
   "DNDAMIGOS.JournalDirectory.ImportCharacter": "Import a character",
   "DNDAMIGOS.Help.CharImport.Title": "Import a character",
-  "DNDAMIGOS.Help.CharImport.Body": "Bring a character from another campaign into this one: a Part 1 character into Part 2. Pick one from the list (the site's other campaigns, grouped by campaign; only characters with a full saved sheet are listed). The site makes a separate copy in this campaign and a new actor is built here from its full sheet, with every item, spell and feat, linked to the copy so Pull and Push work as usual. The original is left exactly as it was. You need permission to create actors in this world; if you don't have it, ask the GM to import it.",
+  "DNDAMIGOS.Help.CharImport.Body": "Bring a character from another campaign into this one: a Part 1 character into Part 2. Pick one from the list (the site's other campaigns, grouped by campaign; only characters with a full saved sheet are listed). The site makes a separate copy in this campaign and a new actor is built here from its full sheet, with every item, spell and feat, linked to the copy so Pull and Push work as usual. If the world or the campaign already has a character by that name, the name box fills with a suggestion and tells you why; you can type any name you like. The original is left exactly as it was. You need permission to create actors in this world; if you don't have it, ask the GM to import it.",
   "DNDAMIGOS.CharImport.Title": "Import a character from another campaign",
   "DNDAMIGOS.CharImport.Body": "Pick a character to bring into this world. The site makes a separate copy in this campaign (the original is left as it was), and a new actor is built here from its full saved sheet.",
   "DNDAMIGOS.CharImport.Pick": "Character",
@@ -274,5 +274,8 @@
   "DNDAMIGOS.CharImport.None": "No other campaign has a character for this game system with a full sheet saved yet.",
   "DNDAMIGOS.CharImport.NoPermission": "You aren't allowed to create actors in this world. Ask the GM to import the character, or to let players create actors.",
   "DNDAMIGOS.CharImport.ActorFailed": "The site's copy of {name} was made, but Foundry could not build the actor: {error}. Open a blank character sheet and use Pull from Site to bring it in.",
-  "DNDAMIGOS.CharImport.Done": "Imported {name} ({items} items), linked to this campaign's copy on the site."
+  "DNDAMIGOS.CharImport.Done": "Imported {name} ({items} items), linked to this campaign's copy on the site.",
+  "DNDAMIGOS.CharImport.NameLabel": "Name in this campaign",
+  "DNDAMIGOS.CharImport.NameTaken": "A character called {name} already exists here. Rename the copy if you want both.",
+  "DNDAMIGOS.CharImport.NameRenamed": "This campaign or world already has a character called {name}, so the copy is named {suggestion}. Change it if you like."
 }

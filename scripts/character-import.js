@@ -6,6 +6,10 @@
 // it was, nothing links the two) and builds a new actor here from the copy's full saved sheet,
 // linked to it so Pull and Push work as usual.
 //
+// The copy can be renamed in the same window. When this world already has an actor by that
+// name, or this campaign already has a character by it, the name box is filled with a
+// suggestion ("Cheese (Stolen Fate - Part 1)") and says why; typing another name checks it again.
+//
 // Still click-to-run like the rest of the module. main.js hands over its API helpers through
 // configureCharacterImport(), so the two files never import each other.
 
@@ -20,7 +24,11 @@ export function configureCharacterImport(d) {
 
 const label = (c) => `${c.name} — ${t('DNDAMIGOS.CharImport.Level', { level: c.level })}${[c.race, c.class].filter(Boolean).length ? ' ' + [c.race, c.class].filter(Boolean).join(' ') : ''}${c.player_display ? ` (${c.player_display})` : ''}`;
 
-export async function openCharacterImport() {
+/**
+ * Opens the picker. `prefill` ({ sourceId, name }) reopens it on a character with its name
+ * already typed, after the site refused a name as already taken.
+ */
+export async function openCharacterImport(prefill = null) {
   if (!deps.isConfigured()) {
     ui.notifications.warn(t('DNDAMIGOS.ActorSheet.NotConfigured'));
     return;
@@ -31,11 +39,17 @@ export async function openCharacterImport() {
   }
   const journalId = game.settings.get(deps.MODULE_ID, 'journalId');
   let characters;
+  let here = [];
   try {
     characters = (await deps.apiRequest(`characters-elsewhere.php?journal_id=${journalId}`)).characters;
   } catch (err) {
     ui.notifications.error(t('DNDAMIGOS.Error.Generic', { error: err.message }));
     return;
+  }
+  try {
+    here = (await deps.apiRequest(`characters-list.php?journal_id=${journalId}`)).characters;
+  } catch (err) {
+    // the name check is a convenience; without it the site still refuses a true duplicate
   }
   // Only sheets saved from this game system can become an actor here.
   const usable = characters.filter((c) => !c.system_id || c.system_id === game.system.id);
@@ -51,8 +65,18 @@ export async function openCharacterImport() {
   });
   const options = [...byCampaign.entries()].map(([campaign, list]) => `
     <optgroup label="${esc(campaign)}">
-      ${list.map((c) => `<option value="${esc(c.id)}">${esc(label(c))}</option>`).join('')}
+      ${list.map((c) => `<option value="${esc(c.id)}" data-name="${esc(c.name)}" data-campaign="${esc(campaign)}"${prefill?.sourceId === c.id ? ' selected' : ''}>${esc(label(c))}</option>`).join('')}
     </optgroup>`).join('');
+
+  const lower = (s) => String(s || '').trim().toLowerCase();
+  const campaignNames = new Set(here.map((c) => lower(c.name)));
+  const taken = (name) => !!lower(name) && (campaignNames.has(lower(name)) || game.actors.some((a) => lower(a.name) === lower(name)));
+  /** "Cheese", else "Cheese (Stolen Fate - Part 1)", else that with " 2", " 3"... */
+  const suggest = (name, campaign) => {
+    let candidate = `${name} (${campaign})`;
+    for (let n = 2; taken(candidate); n += 1) candidate = `${name} (${campaign}) ${n}`;
+    return candidate;
+  };
 
   openDialog({
     title: t('DNDAMIGOS.CharImport.Title'),
@@ -62,30 +86,67 @@ export async function openCharacterImport() {
       <div class="form-group">
         <label>${t('DNDAMIGOS.CharImport.Pick')}</label>
         <select name="source" style="width:100%;">${options}</select>
+      </div>
+      <div class="form-group">
+        <label>${t('DNDAMIGOS.CharImport.NameLabel')}</label>
+        <input type="text" name="newname" maxlength="120" style="width:100%;">
+        <p class="notes dab-name-note" style="margin:4px 0 0;color:#b8860b;" hidden></p>
       </div>`,
     buttons: {
       import: {
         label: t('DNDAMIGOS.CharImport.Import'),
         icon: '<i class="fa-solid fa-file-import"></i>',
-        callback: (html) => importCharacter(Number(html.find('[name="source"]').val())),
+        callback: (html) => {
+          const select = html.find('[name="source"]')[0];
+          const original = select.selectedOptions[0]?.dataset.name || '';
+          const name = String(html.find('[name="newname"]').val() || '').trim() || original;
+          return importCharacter(Number(select.value), name, original);
+        },
       },
       cancel: { label: t('Cancel') },
     },
     default: 'import',
+    render: (html) => {
+      const select = html.find('[name="source"]')[0];
+      const input = html.find('[name="newname"]')[0];
+      const note = html.find('.dab-name-note')[0];
+      const say = (text) => { note.textContent = text; note.hidden = !text; };
+      const picked = () => select.selectedOptions[0]?.dataset || {};
+
+      const onPick = (typedName) => {
+        const { name = '', campaign = '' } = picked();
+        if (typedName !== undefined) {
+          input.value = typedName;
+          say(taken(typedName) ? t('DNDAMIGOS.CharImport.NameTaken', { name: typedName }) : '');
+        } else if (taken(name)) {
+          input.value = suggest(name, campaign);
+          say(t('DNDAMIGOS.CharImport.NameRenamed', { name, suggestion: input.value }));
+        } else {
+          input.value = name;
+          say('');
+        }
+      };
+      select.addEventListener('change', () => onPick());
+      input.addEventListener('input', () => say(taken(input.value) ? t('DNDAMIGOS.CharImport.NameTaken', { name: input.value.trim() }) : ''));
+      onPick(prefill?.sourceId === Number(select.value) ? prefill.name : undefined);
+      if (prefill?.name) input.focus();
+    },
   });
 }
 
-async function importCharacter(sourceId) {
+async function importCharacter(sourceId, name, original) {
   const journalId = game.settings.get(deps.MODULE_ID, 'journalId');
 
   let copy;
   try {
     copy = (await deps.apiRequest('copy-character.php', {
       method: 'POST',
-      body: { character_id: sourceId, journal_id: journalId, user_id: deps.getMyUserId() },
+      body: { character_id: sourceId, journal_id: journalId, user_id: deps.getMyUserId(), name },
     })).character;
   } catch (err) {
     ui.notifications.error(t('DNDAMIGOS.Error.Generic', { error: err.message }));
+    // "this campaign already has that name": bring the window straight back to rename it
+    if (err.status === 409) openCharacterImport({ sourceId, name });
     return;
   }
 
@@ -102,6 +163,7 @@ async function importCharacter(sourceId) {
   // copy that now exists in this campaign (the saved flags still point at the original).
   const data = foundry.utils.deepClone(snapshot);
   for (const key of ['_id', 'folder', 'sort', '_stats', 'ownership']) delete data[key];
+  data.name = copy.name;
   data.ownership = { default: 0, [game.user.id]: 3 };
   data.flags = { ...(data.flags || {}), [deps.MODULE_ID]: { ...(data.flags?.[deps.MODULE_ID] || {}), characterId: copy.id, characterName: copy.name } };
 

@@ -62,7 +62,9 @@ divider so it's easy to find without being mistaken for one of them.
   site's other campaigns' characters that have a full saved sheet. The site makes a
   separate copy in this campaign (the original is untouched and nothing links the
   two), and a new actor is built here from the full sheet, linked to the copy so
-  Pull and Push work as usual. Needs permission to create actors in the world.
+  Pull and Push work as usual. If the world or campaign already has a character
+  by that name, the name box suggests a new one (typing your own works too).
+  Needs permission to create actors in the world.
 - **Session Recap** (GM only; in the menu and linked from End of Session
   Sync) — Nethys drafts a session-log entry from the night's chat as soon
   as the window opens; there's no form to fill in first. The session is
