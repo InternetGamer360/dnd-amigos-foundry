@@ -57,6 +57,11 @@ divider so it's easy to find without being mistaken for one of them.
   setting can force this module's own). Breaks are logged and announced through the
   hooks `dndAmigosBreakStart`, `dndAmigosBreakEnd`, `dndAmigosPlayerAway` and
   `dndAmigosPlayerBack`.
+- **Play E.Y.F.F.O.** (in the menu, on the Break Room panel, and as a game card in
+  AFK Tavern's break room). Opens the site's door game in a pop-up window. With a
+  personal Foundry token set, the module asks the site for a one-time sign-in link
+  (single use, about 90 seconds) so the window opens already signed in; otherwise it
+  opens the normal sign-in page. Allow pop-ups for your Foundry address.
 - **Import a character** (in the menu). Brings a character from another campaign
   into this one, for example a Part 1 character into Part 2. The list shows the
   site's other campaigns' characters that have a full saved sheet. The site makes a

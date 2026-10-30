@@ -14,6 +14,7 @@ import { configureStash, openStashWindow } from './stash.js';
 import { configureSessionSync, openSessionSync } from './session-sync.js';
 import { configureRecap, openRecapWindow } from './recap.js';
 import { openBreakMenu } from './break.js';
+import { configureEyffo, openEyffo } from './eyffo.js';
 import { configureCharacterImport, openCharacterImport } from './character-import.js';
 import { MODULE_ID, esc as attr } from './util.js';
 
@@ -27,6 +28,7 @@ configureStash({ MODULE_ID, apiRequest, isConfigured });
 configureSessionSync({ MODULE_ID, isConfigured, getMyUserId, syncCharacterCore });
 configureRecap({ MODULE_ID, apiRequest, isConfigured, getMyUserId });
 configureCharacterImport({ MODULE_ID, apiRequest, isConfigured, getMyUserId });
+configureEyffo({ apiRequest, isConfigured, getMyUserId });
 
 /* --------------------------------------------------------------------
    Settings
@@ -1012,6 +1014,7 @@ function openAmigosMenu() {
     { action: 'nethys', icon: 'fa-hat-wizard', labelKey: 'DNDAMIGOS.JournalDirectory.AskNethys', onClick: openNethysWindow },
     { action: 'break', icon: 'fa-mug-hot', labelKey: 'DNDAMIGOS.JournalDirectory.Break', onClick: openBreakMenu },
     { action: 'import-character', icon: 'fa-file-import', labelKey: 'DNDAMIGOS.JournalDirectory.ImportCharacter', onClick: openCharacterImport },
+    { action: 'eyffo', icon: 'fa-dungeon', labelKey: 'DNDAMIGOS.JournalDirectory.Eyffo', onClick: openEyffo },
   ];
   if (game.user.isGM) {
     entries.push({ action: 'session-recap', icon: 'fa-feather', labelKey: 'DNDAMIGOS.JournalDirectory.SessionRecap', onClick: openRecapWindow });
@@ -1063,6 +1066,7 @@ function openHelpDialog() {
     ['DNDAMIGOS.Help.Nethys.Title', 'DNDAMIGOS.Help.Nethys.Body'],
     ['DNDAMIGOS.Help.Break.Title', 'DNDAMIGOS.Help.Break.Body'],
     ['DNDAMIGOS.Help.CharImport.Title', 'DNDAMIGOS.Help.CharImport.Body'],
+    ['DNDAMIGOS.Help.Eyffo.Title', 'DNDAMIGOS.Help.Eyffo.Body'],
     ['DNDAMIGOS.Help.PushLore.Title', 'DNDAMIGOS.Help.PushLore.Body'],
     ['DNDAMIGOS.Help.ImportInfo.Title', 'DNDAMIGOS.Help.ImportInfo.Body'],
     ['DNDAMIGOS.Help.Identity.Title', 'DNDAMIGOS.Help.Identity.Body'],

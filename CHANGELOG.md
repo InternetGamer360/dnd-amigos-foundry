@@ -2,6 +2,9 @@
 
 All notable changes to the D&D Amigos Connector. Newest first.
 
+## 1.10.0 — 2026-10-29
+- **Play E.Y.F.F.O. from Foundry.** A new **Play E.Y.F.F.O.** entry in the menu, a button on the Break Room panel, and, if AFK Tavern is active, an E.Y.F.F.O. card in its break room (your hero's level, HP, gold and turns left, and a Play button). It opens the site's game in a pop-up window beside Foundry. With your personal Foundry token set, the module asks the site for a one-time sign-in link (good once, for about a minute and a half) so the window is already signed in; without one it opens the site's normal sign-in. Needs the site update that adds the sign-in link.
+
 ## 1.9.1 — 2026-10-29
 - **Import a character: rename the copy.** The import window has a name box. If this world already has an actor, or this campaign already has a character, with that name, the box fills with a suggestion such as "Cheese (Stolen Fate - Part 1)" and says why; type any other name and it checks again. If the site still finds the name taken, the window comes straight back to rename it.
 

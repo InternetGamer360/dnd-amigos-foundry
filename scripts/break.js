@@ -20,9 +20,13 @@
 // If the AFK Tavern module is active, this defers to it (its break room, its minigames): the
 // menu entry and /break open AFK Tavern's break room instead, and nothing here shows. The
 // "Break room" setting can force this one.
+//
+// The panel has a Play E.Y.F.F.O. button (scripts/eyffo.js, which also adds E.Y.F.F.O. to AFK
+// Tavern's list of games).
 
 import { MODULE_ID, t, chatText } from './util.js';
 import { openDialog, confirmDialog } from './windows.js';
+import { openEyffo, eyffoAvailable } from './eyffo.js';
 
 const SOCKET = `module.${MODULE_ID}`;
 const PRESETS = [5, 10, 15, 20, 30];
@@ -271,7 +275,8 @@ function renderBreak() {
        <button type="button" data-action="end" class="dab-end"><i class="fa-solid fa-flag-checkered"></i> ${t('DNDAMIGOS.Break.End')}</button>`
     : (me === 'back'
       ? `<button type="button" data-action="away"><i class="fa-solid fa-door-open"></i> ${t('DNDAMIGOS.Break.StepAway')}</button>`
-      : `<button type="button" data-action="back" class="dab-primary"><i class="fa-solid fa-person-walking-arrow-loop-left"></i> ${t('DNDAMIGOS.Break.ImBack')}</button>`);
+      : `<button type="button" data-action="back" class="dab-primary"><i class="fa-solid fa-person-walking-arrow-loop-left"></i> ${t('DNDAMIGOS.Break.ImBack')}</button>`)
+    + (eyffoAvailable() ? `<button type="button" data-action="eyffo"><i class="fa-solid fa-dungeon"></i> ${t('DNDAMIGOS.Eyffo.Play')}</button>` : '');
   panel.innerHTML = `
     <div class="dab-head">
       <i class="fa-solid fa-mug-hot"></i>
@@ -295,6 +300,7 @@ function onPanelClick(ev) {
     case 'extend': extendBreak(5); break;
     case 'bell': ringBell(); break;
     case 'end': endBreakWithCheck(); break;
+    case 'eyffo': openEyffo(); break;
     default: break;
   }
 }

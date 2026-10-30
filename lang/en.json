@@ -277,5 +277,20 @@
   "DNDAMIGOS.CharImport.Done": "Imported {name} ({items} items), linked to this campaign's copy on the site.",
   "DNDAMIGOS.CharImport.NameLabel": "Name in this campaign",
   "DNDAMIGOS.CharImport.NameTaken": "A character called {name} already exists here. Rename the copy if you want both.",
-  "DNDAMIGOS.CharImport.NameRenamed": "This campaign or world already has a character called {name}, so the copy is named {suggestion}. Change it if you like."
+  "DNDAMIGOS.CharImport.NameRenamed": "This campaign or world already has a character called {name}, so the copy is named {suggestion}. Change it if you like.",
+  "DNDAMIGOS.JournalDirectory.Eyffo": "Play E.Y.F.F.O.",
+  "DNDAMIGOS.Help.Eyffo.Title": "Play E.Y.F.F.O.",
+  "DNDAMIGOS.Help.Eyffo.Body": "Opens E.Y.F.F.O., the group's door game on the D&D Amigos site, in a pop-up window beside Foundry. It is in this menu, on the Break Room panel, and, if you use AFK Tavern, in its break room as a game. If you have your personal Foundry token set (Configure Settings → My D&D Amigos Identity), the window signs you in by itself with a one-time link; without one it opens the site's normal sign-in. If nothing opens, allow pop-ups for your Foundry address in the browser.",
+  "DNDAMIGOS.Eyffo.Title": "E.Y.F.F.O.",
+  "DNDAMIGOS.Eyffo.Description": "The D&D Amigos door game: fight, explore and trade between rounds. Opens the site in a pop-up.",
+  "DNDAMIGOS.Eyffo.Blurb": "Your hero on the D&D Amigos site. The game opens in its own window, already signed in.",
+  "DNDAMIGOS.Eyffo.Play": "Play E.Y.F.F.O.",
+  "DNDAMIGOS.Eyffo.Connecting": "Connecting to E.Y.F.F.O. ...",
+  "DNDAMIGOS.Eyffo.PopupBlocked": "The browser blocked the E.Y.F.F.O. window. Allow pop-ups for this Foundry address, then try again.",
+  "DNDAMIGOS.Eyffo.Level": "Level",
+  "DNDAMIGOS.Eyffo.HP": "HP",
+  "DNDAMIGOS.Eyffo.Gold": "Gold",
+  "DNDAMIGOS.Eyffo.Turns": "Turns left",
+  "DNDAMIGOS.Eyffo.NoHero": "You haven't made a hero yet. Press Play and the game will walk you through it.",
+  "DNDAMIGOS.Eyffo.NoStats": "Couldn't read your hero from the site (is your personal token set?). You can still press Play."
 }
