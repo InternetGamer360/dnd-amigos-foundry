@@ -3,7 +3,7 @@
 All notable changes to the D&D Amigos Connector. Newest first.
 
 ## 1.12.2 — 2026-10-30
-- **Tidier sheet header.** The D&D Amigos Sync and Check sheet buttons in a character sheet's header are now icon only (Sync is two opposite arrows, Check sheet a stethoscope) and show their names when you hover over them, so they take far less of a crowded header. The Sync button's icon changed so it no longer looks like the refresh icons other modules use.
+- **Tidier sheet header.** The D&D Amigos Sync and Check sheet buttons in a character sheet's header are now icon only (Sync is two opposite arrows, Check sheet a stethoscope) and show their names when you hover over them, so they take far less of a crowded header. They also sit next to each other, just left of Close. The Sync button's icon changed so it no longer looks like the refresh icons other modules use.
 
 ## 1.12.1 — 2026-10-30
 - **Import a character now builds the actor the way Pull does.** It makes an empty actor and runs Foundry's own Import Data on the saved sheet, which cleans and migrates the whole sheet, instead of creating the actor straight from the saved data. Sheets made the old way sometimes ignored weapons dragged onto them until they were re-pulled. If Foundry refuses the import, the old way is used as a fallback.

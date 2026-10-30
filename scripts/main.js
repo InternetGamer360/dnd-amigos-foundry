@@ -17,7 +17,7 @@ import { openBreakMenu } from './break.js';
 import { configureEyffo, openEyffo } from './eyffo.js';
 import { configureSheetCheck } from './sheet-check.js';
 import { configureCharacterImport, openCharacterImport } from './character-import.js';
-import { MODULE_ID, esc as attr, tipHeaderButtons } from './util.js';
+import { MODULE_ID, esc as attr, tipHeaderButtons, addHeaderButton } from './util.js';
 
 
 // NPCs & Places (scripts/lore.js) gets the pieces of this file it needs handed to it,
@@ -435,7 +435,7 @@ class IdentitySettingsMenu extends MenuWindow {
 
 Hooks.on('getActorSheetHeaderButtons', (sheet, buttons) => {
   if (sheet.actor?.type !== 'character') return;
-  buttons.unshift({
+  addHeaderButton(buttons, {
     label: '', // icon only: the name is the hover tooltip (see tipHeaderButtons in util.js)
     class: 'dnd-amigos-sync',
     icon: 'fa-solid fa-arrow-right-arrow-left',

@@ -66,3 +66,16 @@ export function tipHeaderButtons(app) {
     });
   }
 }
+
+/**
+ * Puts one of our sheet-header buttons in the list: our buttons sit together, in the order of
+ * HEADER_TIPS, just left of Close, whatever order the modules' header hooks happen to run in.
+ */
+export function addHeaderButton(buttons, button) {
+  const order = Object.keys(HEADER_TIPS);
+  const rank = (b) => order.findIndex((cls) => String(b.class ?? '').split(/\s+/).includes(cls));
+  const mine = rank(button);
+  let at = buttons.findIndex((b) => String(b.class ?? '').split(/\s+/).includes('close') || (rank(b) > mine && rank(b) !== -1));
+  if (at < 0) at = buttons.length;
+  buttons.splice(at, 0, button);
+}

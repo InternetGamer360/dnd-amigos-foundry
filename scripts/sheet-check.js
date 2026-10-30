@@ -22,7 +22,7 @@
 // main.js hands over its API helpers through configureSheetCheck(); the sheet buttons are added
 // here with the same two header hooks the Sync button uses.
 
-import { MODULE_ID, esc, t } from './util.js';
+import { MODULE_ID, esc, t, addHeaderButton } from './util.js';
 import { openDialog, confirmDialog } from './windows.js';
 
 let deps = null;
@@ -336,7 +336,7 @@ async function applyFix(actor, d) {
 
 Hooks.on('getActorSheetHeaderButtons', (sheet, buttons) => {
   if (sheet.actor?.type !== 'character' || !SUPPORTED.includes(game.system.id)) return;
-  buttons.push({
+  addHeaderButton(buttons, {
     label: '', // icon only: the name is the hover tooltip (see tipHeaderButtons in util.js)
     class: 'dnd-amigos-check',
     icon: 'fa-solid fa-stethoscope',
