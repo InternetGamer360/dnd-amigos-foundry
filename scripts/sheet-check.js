@@ -11,7 +11,7 @@
 //   - items made under a different Foundry or system version than this world runs (a weapon
 //     dragged over from an older world keeps its old data layout until something migrates it);
 //   - references to things that are not on this actor: a container, or the item that granted it;
-//   - rule elements the system could not use (an unknown key, or one it set aside as invalid);
+//   - rule elements the system doesn't recognise (an unknown or missing key);
 //   - carry-state conflicts: "held" with no hands or hands without "held", more than two armors
 //     worn, more hands in use than a character has, more invested items than the usual limit;
 //   - weapons that are carried but have no Strike on the sheet;
@@ -33,11 +33,30 @@ export function configureSheetCheck(d) {
 
 const SUPPORTED = ['pf2e', 'sf2e'];
 const IGNORED_ITEM_KEYS = ['_id', '_stats', 'sort', 'ownership', 'folder'];
+// Bookkeeping the system rewrites on every item when it updates; never a real difference.
+const IGNORED_DIFF_KEYS = ['system._migration', 'flags.core'];
 
 const major = (v) => String(v ?? '').split('.')[0];
-const stable = (v) => JSON.stringify(v, (k, val) => (val && typeof val === 'object' && !Array.isArray(val)
-  ? Object.fromEntries(Object.keys(val).sort().map((x) => [x, val[x]]))
-  : val));
+// The site stores a sheet through PHP, which turns every empty object {} into an empty array [], so
+// the two are treated as the same thing here; otherwise every empty field would show as "changed".
+const stable = (v) => JSON.stringify(v, (k, val) => {
+  if (Array.isArray(val)) return val.length ? val : {};
+  return val && typeof val === 'object'
+    ? Object.fromEntries(Object.keys(val).sort().map((x) => [x, val[x]]))
+    : val;
+});
+
+/** `site` with each empty array put back as an empty object wherever `local` has an object there. */
+function reshape(site, local) {
+  if (Array.isArray(site)) {
+    if (!site.length && local && typeof local === 'object' && !Array.isArray(local)) return {};
+    return site.map((v, i) => reshape(v, Array.isArray(local) ? local[i] : undefined));
+  }
+  if (site && typeof site === 'object') {
+    return Object.fromEntries(Object.entries(site).map(([k, v]) => [k, reshape(v, local?.[k])]));
+  }
+  return site;
+}
 
 /** The system's own flag namespace on an item (pf2e items keep theirs under "pf2e"). */
 const systemFlags = (item) => item.flags?.[game.system.id] ?? item.flags?.pf2e ?? {};
@@ -51,13 +70,14 @@ function changedKeys(local, site) {
     const b = site[root] ?? {};
     for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
       if (root === 'flags' && k === MODULE_ID) continue;
+      if (IGNORED_DIFF_KEYS.includes(`${root}.${k}`)) continue;
       if (stable(a[k]) !== stable(b[k])) out.push(`${root}.${k}`);
     }
   }
   return out;
 }
 
-/** Rule elements the system could not use: an unknown key, or one it set aside as invalid. */
+/** Rule elements with a key the system doesn't know (or none). Rules the system merely isn't applying right now (an unworn item's, say) are normal and not reported. */
 function ruleFindings(actor, add) {
   const registry = game.pf2e?.RuleElements?.all ?? game[game.system.id]?.RuleElements?.all ?? null;
   for (const item of actor.items) {
@@ -68,12 +88,6 @@ function ruleFindings(actor, add) {
       .filter((key, i) => key === null || (registry && !registry[key.replace(/^PF2E\.RuleElement\./, '')]))
       .map((key) => key ?? '(no key)');
     if (unknown.length) add('problem', t('DNDAMIGOS.Check.RuleUnknown', { name: item.name, keys: [...new Set(unknown)].join(', ') }));
-
-    const ignored = Array.isArray(item.rules) ? item.rules.filter((r) => r?.ignored) : [];
-    if (ignored.length) {
-      const keys = [...new Set(ignored.map((r) => String(r.key ?? '?').replace(/^PF2E\.RuleElement\./, '')))].join(', ');
-      add('problem', t('DNDAMIGOS.Check.RuleIgnored', { name: item.name, count: ignored.length, keys }));
-    }
   }
 }
 
@@ -230,7 +244,7 @@ export async function openSheetCheck(actor) {
   const notes = r.findings.filter((f) => f.level === 'note');
 
   const list = (items) => `<ul class="dac-list">${items.map((f) => `<li>${esc(f.text)}</li>`).join('')}</ul>`;
-  const diffRows = r.diffs.map((d, i) => {
+  const diffRow = (d, i) => {
     const what = d.kind === 'changed'
       ? t('DNDAMIGOS.Check.Changed', { fields: d.keys.slice(0, 6).join(', ') + (d.keys.length > 6 ? ', …' : '') })
       : (d.kind === 'missing' ? t('DNDAMIGOS.Check.Missing') : t('DNDAMIGOS.Check.Extra'));
@@ -238,7 +252,13 @@ export async function openSheetCheck(actor) {
       ? `<button type="button" data-fix="${i}">${t('DNDAMIGOS.Check.Restore')}</button>`
       : (d.kind === 'missing' ? `<button type="button" data-fix="${i}">${t('DNDAMIGOS.Check.Add')}</button>` : '');
     return `<li><span><strong>${esc(d.name)}</strong> <em>${esc(d.type)}</em><br>${esc(what)}</span>${button}</li>`;
-  }).join('');
+  };
+  const rowsOf = (kinds) => r.diffs.map((d, i) => (kinds.includes(d.kind) ? diffRow(d, i) : '')).join('');
+  const extraCount = r.diffs.filter((d) => d.kind === 'extra').length;
+  const mainRows = rowsOf(['changed', 'missing']);
+  const diffBlock = (mainRows ? `<ul class="dac-list dac-diffs">${mainRows}</ul>` : '')
+    + (extraCount ? `<details><summary>${t('DNDAMIGOS.Check.ExtraGroup', { count: extraCount })}</summary><ul class="dac-list dac-diffs">${rowsOf(['extra'])}</ul></details>` : '');
+  const olderCopy = r.site && r.site.foundry && major(r.site.foundry) !== major(game.version);
 
   const content = `
     <div class="dac" style="max-height:60vh;overflow:auto;">
@@ -248,7 +268,8 @@ export async function openSheetCheck(actor) {
       <h3>${t('DNDAMIGOS.Check.SiteCopy')}</h3>
       ${r.site
         ? `<p class="notes">${t('DNDAMIGOS.Check.SiteTaken', { when: esc(r.site.takenAt) })}</p>
-           ${r.diffs.length ? `<ul class="dac-list dac-diffs">${diffRows}</ul>` : `<p>${t('DNDAMIGOS.Check.Matches')}</p>`}`
+           ${olderCopy ? `<p class="notes">${t('DNDAMIGOS.Check.SiteOlder', { made: esc(r.site.foundry), now: esc(game.version) })}</p>` : ''}
+           ${r.diffs.length ? diffBlock : `<p>${t('DNDAMIGOS.Check.Matches')}</p>`}`
         : `<p>${esc(r.siteNote)}</p>`}
       <p><button type="button" data-copy>${t('DNDAMIGOS.Check.Copy')}</button></p>
     </div>`;
@@ -290,7 +311,8 @@ async function applyFix(actor, d) {
     content: `<p>${t(adding ? 'DNDAMIGOS.Check.AddBody' : 'DNDAMIGOS.Check.RestoreBody', { name: esc(d.name) })}</p>`,
   });
   if (!ok) return false;
-  const data = foundry.utils.deepClone(d.site);
+  const localItem = d.id ? actor.items.get(d.id)?.toObject() : null;
+  const data = reshape(foundry.utils.deepClone(d.site), localItem);
   try {
     if (adding) {
       await actor.createEmbeddedDocuments('Item', [data], { keepId: true });

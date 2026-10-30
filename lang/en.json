@@ -294,7 +294,7 @@
   "DNDAMIGOS.Eyffo.NoHero": "You haven't made a hero yet. Press Play and the game will walk you through it.",
   "DNDAMIGOS.Eyffo.NoStats": "Couldn't read your hero from the site (is your personal token set?). You can still press Play.",
   "DNDAMIGOS.Help.Check.Title": "Check sheet",
-  "DNDAMIGOS.Help.Check.Body": "On a Pathfinder 2e / Starfinder 2e character sheet, the stethoscope button (in the sheet's header menu) opens a check of that sheet. It lists the usual causes of a misbehaving sheet: items Foundry marked invalid, items made under an older Foundry or system version (for example a weapon dragged over from an older world), items pointing at a container or granting item that isn't on this character, rule elements the system couldn't use, carry-state conflicts (held with no hands, two armors worn, too many hands or invested items), and carried weapons with no Strike. If the character is linked to the site, it also compares every item with the site's saved copy and offers Restore (put that one item back the way the site has it) or Add (bring back an item the site has and the sheet doesn't). Nothing changes until you confirm. Copy report puts everything, plus versions and active modules, on the clipboard to paste to the person fixing it.",
+  "DNDAMIGOS.Help.Check.Body": "On a Pathfinder 2e / Starfinder 2e character sheet, the stethoscope button (in the sheet's header menu) opens a check of that sheet. It lists the usual causes of a misbehaving sheet: items Foundry marked invalid, items made under an older Foundry or system version (for example a weapon dragged over from an older world), items pointing at a container or granting item that isn't on this character, rule elements the system doesn't recognise, carry-state conflicts (held with no hands, two armors worn, too many hands or invested items), and carried weapons with no Strike. If the character is linked to the site, it also compares every item with the site's saved copy and offers Restore (put that one item back the way the site has it) or Add (bring back an item the site has and the sheet doesn't). Nothing changes until you confirm. Copy report puts everything, plus versions and active modules, on the clipboard to paste to the person fixing it.",
   "DNDAMIGOS.Check.HeaderButton": "Check sheet",
   "DNDAMIGOS.Check.Title": "Check sheet: {name}",
   "DNDAMIGOS.Check.Close": "Close",
@@ -327,13 +327,14 @@
   "DNDAMIGOS.Check.Copy": "Copy report",
   "DNDAMIGOS.Check.Copied": "Report copied.",
   "DNDAMIGOS.Check.CopyFailed": "Couldn't copy to the clipboard.",
-  "DNDAMIGOS.Check.RuleUnknown": "{name}: has rule elements the system doesn't recognise ({keys}), so they do nothing. Bonuses, resistances or attack options that depend on them are missing.",
-  "DNDAMIGOS.Check.RuleIgnored": "{name}: {count} rule element(s) were set aside by the system as invalid ({keys}), so they do nothing.",
+  "DNDAMIGOS.Check.RuleUnknown": "{name}: has rule elements the system doesn't recognise ({keys}), so they do nothing.",
   "DNDAMIGOS.Check.HeldNoHands": "{name}: marked {carry} but held in {hands} hands. The carry state and the hands disagree.",
   "DNDAMIGOS.Check.HandsNotHeld": "{name}: marked {carry} but still counts {hands} hand(s) held. The carry state and the hands disagree.",
   "DNDAMIGOS.Check.TwoArmors": "More than one armor is worn at once: {names}.",
   "DNDAMIGOS.Check.ArmorHeld": "{name}: armor carried in the hands instead of worn.",
   "DNDAMIGOS.Check.TooManyHands": "Items are held in {hands} hands in total; a character has 2.",
   "DNDAMIGOS.Check.OverInvested": "{count} items are invested; the usual limit is 10 (some features raise it).",
-  "DNDAMIGOS.Check.StaleInvested": "{count} item(s) are marked invested but can't be invested (for example {examples}). Harmless, but a sign of data carried over from elsewhere."
+  "DNDAMIGOS.Check.StaleInvested": "{count} item(s) are marked invested but can't be invested (for example {examples}). Harmless, but a sign of data carried over from elsewhere.",
+  "DNDAMIGOS.Check.ExtraGroup": "{count} item(s) on this sheet but not on the site's copy",
+  "DNDAMIGOS.Check.SiteOlder": "The site's copy was saved under Foundry {made}; this world runs {now}. Many differences below, such as descriptions and subfeatures, are just the game system having updated its data since."
 }

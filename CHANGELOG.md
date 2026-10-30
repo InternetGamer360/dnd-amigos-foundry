@@ -2,6 +2,9 @@
 
 All notable changes to the D&D Amigos Connector. Newest first.
 
+## 1.12.1 — 2026-10-30
+- **Check sheet: fewer false alarms.** Found by running it on a real sheet. It no longer reports rule elements "set aside as invalid": the system also sets a rule aside when an item simply isn't being applied (a torch that isn't lit, a ring that isn't worn), which is normal; only unrecognised rule keys are reported now. Empty fields are no longer shown as changed (the site saves an empty `{}` as `[]`), which had flagged `subfeatures` and similar on nearly every item. `system._migration` and `flags.core`, which the game system rewrites on every update, are ignored in the comparison. When the site's copy was saved under an older Foundry version the window says so, since many differences are then just the system's own updates. Items on the sheet but not on the site's copy are folded into a collapsed group.
+
 ## 1.12.0 — 2026-10-30
 - **Check sheet: rule elements and carry-state conflicts.** It now reports rule elements the system could not use (an unknown key, or one the system set aside as invalid), items whose carry state and hands disagree (marked held with no hands, or hands counted while not held), more than one armor worn, more than two hands in use, and more invested items than the usual limit of 10. Invested items are counted by the invested trait, since stale invested flags on things like chalk are common. Hands and invested counts are listed as "worth knowing", not as problems, because plenty of working sheets exceed them.
 
