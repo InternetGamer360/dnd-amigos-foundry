@@ -2,6 +2,9 @@
 
 All notable changes to the D&D Amigos Connector. Newest first.
 
+## 1.11.0 — 2026-10-30
+- **Check sheet.** A stethoscope button in the header menu of Pathfinder 2e / Starfinder 2e character sheets. It lists the usual causes of a misbehaving sheet: items Foundry marked invalid, items made under an older Foundry or system version (such as a weapon dragged in from an older world), items pointing at a container or granting item that isn't on the character, and carried weapons with no Strike. If the character is linked to the site it also compares every item with the site's saved copy and can **Restore** one item from it (or **Add** one that is missing) after a confirmation, so a single bad weapon no longer needs the whole sheet pulled again. **Copy report** puts the findings, versions and active modules on the clipboard. Nothing changes until you confirm.
+
 ## 1.10.0 — 2026-10-29
 - **Play E.Y.F.F.O. from Foundry.** A new **Play E.Y.F.F.O.** entry in the menu, a button on the Break Room panel, and, if AFK Tavern is active, an E.Y.F.F.O. card in its break room (your hero's level, HP, gold and turns left, and a Play button). It opens the site's game in a pop-up window beside Foundry. With your personal Foundry token set, the module asks the site for a one-time sign-in link (good once, for about a minute and a half) so the window is already signed in; without one it opens the site's normal sign-in. Needs the site update that adds the sign-in link.
 

@@ -715,3 +715,32 @@
   border-color: #4caf50;
   color: #fff;
 }
+
+/* Check sheet (scripts/sheet-check.js) */
+.dac .dac-list {
+  margin: 4px 0 10px;
+  padding-left: 18px;
+}
+
+.dac .dac-list li {
+  margin: 0 0 4px;
+}
+
+.dac .dac-diffs {
+  list-style: none;
+  padding-left: 0;
+}
+
+.dac .dac-diffs li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.dac .dac-diffs button {
+  flex: 0 0 auto;
+  width: auto;
+  line-height: 1.6;
+  padding: 0 8px;
+}

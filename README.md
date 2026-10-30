@@ -57,6 +57,12 @@ divider so it's easy to find without being mistaken for one of them.
   setting can force this module's own). Breaks are logged and announced through the
   hooks `dndAmigosBreakStart`, `dndAmigosBreakEnd`, `dndAmigosPlayerAway` and
   `dndAmigosPlayerBack`.
+- **Check sheet** (stethoscope in a Pathfinder 2e / Starfinder 2e character sheet's header
+  menu). Lists the usual causes of a misbehaving sheet (invalid items, items from an
+  older Foundry or system version, dangling container or grant links, carried weapons
+  with no Strike) and, for a linked character, compares each item with the site's saved
+  copy. Restore puts one item back the way the site has it; Add brings back a missing
+  one. Copy report copies everything for whoever is fixing it.
 - **Play E.Y.F.F.O.** (in the menu, on the Break Room panel, and as a game card in
   AFK Tavern's break room). Opens the site's door game in a pop-up window. With a
   personal Foundry token set, the module asks the site for a one-time sign-in link

@@ -15,6 +15,7 @@ import { configureSessionSync, openSessionSync } from './session-sync.js';
 import { configureRecap, openRecapWindow } from './recap.js';
 import { openBreakMenu } from './break.js';
 import { configureEyffo, openEyffo } from './eyffo.js';
+import { configureSheetCheck } from './sheet-check.js';
 import { configureCharacterImport, openCharacterImport } from './character-import.js';
 import { MODULE_ID, esc as attr } from './util.js';
 
@@ -29,6 +30,7 @@ configureSessionSync({ MODULE_ID, isConfigured, getMyUserId, syncCharacterCore }
 configureRecap({ MODULE_ID, apiRequest, isConfigured, getMyUserId });
 configureCharacterImport({ MODULE_ID, apiRequest, isConfigured, getMyUserId });
 configureEyffo({ apiRequest, isConfigured, getMyUserId });
+configureSheetCheck({ apiRequest, isConfigured });
 
 /* --------------------------------------------------------------------
    Settings
@@ -1067,6 +1069,7 @@ function openHelpDialog() {
     ['DNDAMIGOS.Help.Break.Title', 'DNDAMIGOS.Help.Break.Body'],
     ['DNDAMIGOS.Help.CharImport.Title', 'DNDAMIGOS.Help.CharImport.Body'],
     ['DNDAMIGOS.Help.Eyffo.Title', 'DNDAMIGOS.Help.Eyffo.Body'],
+    ['DNDAMIGOS.Help.Check.Title', 'DNDAMIGOS.Help.Check.Body'],
     ['DNDAMIGOS.Help.PushLore.Title', 'DNDAMIGOS.Help.PushLore.Body'],
     ['DNDAMIGOS.Help.ImportInfo.Title', 'DNDAMIGOS.Help.ImportInfo.Body'],
     ['DNDAMIGOS.Help.Identity.Title', 'DNDAMIGOS.Help.Identity.Body'],
