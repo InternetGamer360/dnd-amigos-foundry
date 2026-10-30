@@ -3,6 +3,7 @@
 All notable changes to the D&D Amigos Connector. Newest first.
 
 ## 1.12.1 — 2026-10-30
+- **Import a character now builds the actor the way Pull does.** It makes an empty actor and runs Foundry's own Import Data on the saved sheet, which cleans and migrates the whole sheet, instead of creating the actor straight from the saved data. Sheets made the old way sometimes ignored weapons dragged onto them until they were re-pulled. If Foundry refuses the import, the old way is used as a fallback.
 - **Check sheet: fewer false alarms.** Found by running it on a real sheet. It no longer reports rule elements "set aside as invalid": the system also sets a rule aside when an item simply isn't being applied (a torch that isn't lit, a ring that isn't worn), which is normal; only unrecognised rule keys are reported now. Empty fields are no longer shown as changed (the site saves an empty `{}` as `[]`), which had flagged `subfeatures` and similar on nearly every item. `system._migration` and `flags.core`, which the game system rewrites on every update, are ignored in the comparison. When the site's copy was saved under an older Foundry version the window says so, since many differences are then just the system's own updates. Items on the sheet but not on the site's copy are folded into a collapsed group.
 
 ## 1.12.0 — 2026-10-30

@@ -169,12 +169,36 @@ async function importCharacter(sourceId, name, original) {
 
   let actor;
   try {
-    const ActorClass = globalThis.getDocumentClass?.('Actor') ?? Actor;
-    actor = await ActorClass.create(data);
+    actor = await buildActor(data, snapshot._stats);
   } catch (err) {
     ui.notifications.error(t('DNDAMIGOS.CharImport.ActorFailed', { name: copy.name, error: err.message }));
     return;
   }
   ui.notifications.info(t('DNDAMIGOS.CharImport.Done', { name: copy.name, items: actor.items?.size ?? 0 }));
   actor.sheet?.render(true);
+}
+
+/**
+ * Makes the actor from the saved sheet. The way that matches Pull and Restore is used first: an
+ * empty actor, then Foundry's own "Import Data" on it, which cleans and migrates the whole sheet
+ * the way a re-pull does (a sheet made straight from old saved data once ignored weapons dragged
+ * onto it until it was re-pulled). If that is refused, the actor is made directly from the data.
+ */
+async function buildActor(data, stats) {
+  const ActorClass = globalThis.getDocumentClass?.('Actor') ?? Actor;
+  const ownership = data.ownership;
+  let actor = null;
+  try {
+    actor = await ActorClass.create({ name: data.name, type: data.type, ownership });
+    const { ownership: ignored, ...importable } = data;
+    if (stats) importable._stats = stats; // Pull and Restore import the sheet whole, version stamp included
+    await actor.importFromJSON(JSON.stringify(importable));
+    // the import replaces the actor's flags and may reset who owns it; put both back
+    await actor.update({ ownership, [`flags.${deps.MODULE_ID}`]: data.flags?.[deps.MODULE_ID] ?? {} });
+    return actor;
+  } catch (err) {
+    console.warn(`${deps.MODULE_ID} | Import Data refused, creating the actor directly`, err);
+    if (actor) await actor.delete().catch(() => {});
+  }
+  return ActorClass.create(data);
 }
