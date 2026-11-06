@@ -57,6 +57,10 @@ divider so it's easy to find without being mistaken for one of them.
   setting can force this module's own). Breaks are logged and announced through the
   hooks `dndAmigosBreakStart`, `dndAmigosBreakEnd`, `dndAmigosPlayerAway` and
   `dndAmigosPlayerBack`.
+- **Hero points raise the degree of success** (house rule, Pathfinder 2e / Starfinder 2e).
+  Reroll using Hero Point on a check card spends the point and raises the result one
+  degree instead of rerolling; the dice stay the same. Needs a DC; a critical success
+  can't go higher (nothing is spent). World setting, on by default.
 - **Check sheet** (stethoscope in a Pathfinder 2e / Starfinder 2e character sheet's header
   menu). Lists the usual causes of a misbehaving sheet (invalid items, items from an
   older Foundry or system version, dangling container or grant links, carried weapons

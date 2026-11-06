@@ -16,6 +16,7 @@ import { configureRecap, openRecapWindow } from './recap.js';
 import { openBreakMenu } from './break.js';
 import { configureEyffo, openEyffo } from './eyffo.js';
 import { configureSheetCheck } from './sheet-check.js';
+import './hero-points.js'; // house rule: a hero point raises the degree of success (registers its own hooks)
 import { configureCharacterImport, openCharacterImport } from './character-import.js';
 import { MODULE_ID, esc as attr, tipHeaderButtons, addHeaderButton } from './util.js';
 
@@ -1072,6 +1073,7 @@ function openHelpDialog() {
     ['DNDAMIGOS.Help.CharImport.Title', 'DNDAMIGOS.Help.CharImport.Body'],
     ['DNDAMIGOS.Help.Eyffo.Title', 'DNDAMIGOS.Help.Eyffo.Body'],
     ['DNDAMIGOS.Help.Check.Title', 'DNDAMIGOS.Help.Check.Body'],
+    ['DNDAMIGOS.Help.HeroPoint.Title', 'DNDAMIGOS.Help.HeroPoint.Body'],
     ['DNDAMIGOS.Help.PushLore.Title', 'DNDAMIGOS.Help.PushLore.Body'],
     ['DNDAMIGOS.Help.ImportInfo.Title', 'DNDAMIGOS.Help.ImportInfo.Body'],
     ['DNDAMIGOS.Help.Identity.Title', 'DNDAMIGOS.Help.Identity.Body'],

@@ -336,5 +336,13 @@
   "DNDAMIGOS.Check.OverInvested": "{count} items are invested; the usual limit is 10 (some features raise it).",
   "DNDAMIGOS.Check.StaleInvested": "{count} item(s) are marked invested but can't be invested (for example {examples}). Harmless, but a sign of data carried over from elsewhere.",
   "DNDAMIGOS.Check.ExtraGroup": "{count} item(s) on this sheet but not on the site's copy",
-  "DNDAMIGOS.Check.SiteOlder": "The site's copy was saved under Foundry {made}; this world runs {now}. Many differences below, such as descriptions and subfeatures, are just the game system having updated its data since."
+  "DNDAMIGOS.Check.SiteOlder": "The site's copy was saved under Foundry {made}; this world runs {now}. Many differences below, such as descriptions and subfeatures, are just the game system having updated its data since.",
+  "DNDAMIGOS.HeroPoint.SettingName": "Hero points raise the degree of success",
+  "DNDAMIGOS.HeroPoint.SettingHint": "House rule. Spending a hero point on a check no longer rerolls it: the result goes up one degree (failure to success, success to critical success). Turn off to use the normal reroll.",
+  "DNDAMIGOS.HeroPoint.Label": "Hero Point",
+  "DNDAMIGOS.HeroPoint.NoDC": "This check has no DC to raise the result against, so the hero point was not spent. (The free reroll options still work.)",
+  "DNDAMIGOS.HeroPoint.AlreadyCrit": "That is already a critical success, so the hero point was not spent.",
+  "DNDAMIGOS.HeroPoint.NoPoints": "{name} has no hero points left.",
+  "DNDAMIGOS.Help.HeroPoint.Title": "Hero points (house rule)",
+  "DNDAMIGOS.Help.HeroPoint.Body": "On a Pathfinder 2e / Starfinder 2e check card, right-click and choose Reroll using Hero Point as usual. With the house rule on (Configure Settings, \"Hero points raise the degree of success\"), the dice are not rerolled: the hero point is spent and the result goes up one degree. A failure becomes a success, a success a critical success, a critical failure a failure. The card shows the new degree, marked \"Hero Point\". It needs a DC on the check, and a critical success can't go higher, so in both cases nothing is spent. Turn the setting off to go back to the normal reroll. Mythic points and the keep-higher/lower options are unchanged."
 }
