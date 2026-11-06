@@ -355,5 +355,21 @@
   "DNDAMIGOS.HeroPoint.Degree.criticalFailure": "a critical failure",
   "DNDAMIGOS.HeroPoint.Degree.failure": "a failure",
   "DNDAMIGOS.HeroPoint.Degree.success": "a success",
-  "DNDAMIGOS.HeroPoint.Degree.criticalSuccess": "a critical success"
+  "DNDAMIGOS.HeroPoint.Degree.criticalSuccess": "a critical success",
+  "DNDAMIGOS.Help.ChatSearch.Title": "Search the chat",
+  "DNDAMIGOS.Help.ChatSearch.Body": "The box above the chat searches every message in this world that you are allowed to see, not just the ones on screen. Type words (all of them must appear, in any order: what was said, a roll card's text such as an attack or spell name, the speaker, the player, a dice formula). The sliders button adds a player or character, a from and to date, and \"rolls only\". Matches are listed with the words highlighted, the newest 300 at most. Click the X, or press Escape in the box, and the normal chat comes back untouched. New messages that match appear in the results as they are posted.",
+  "DNDAMIGOS.ChatSearch.Placeholder": "Search chat...",
+  "DNDAMIGOS.ChatSearch.Filters": "More filters",
+  "DNDAMIGOS.ChatSearch.Clear": "Clear search",
+  "DNDAMIGOS.ChatSearch.Who": "From",
+  "DNDAMIGOS.ChatSearch.Anyone": "Anyone",
+  "DNDAMIGOS.ChatSearch.Players": "Players",
+  "DNDAMIGOS.ChatSearch.Characters": "Characters and speakers",
+  "DNDAMIGOS.ChatSearch.From": "After",
+  "DNDAMIGOS.ChatSearch.To": "Before",
+  "DNDAMIGOS.ChatSearch.RollsOnly": "Rolls only",
+  "DNDAMIGOS.ChatSearch.Searching": "Searching...",
+  "DNDAMIGOS.ChatSearch.None": "Nothing found.",
+  "DNDAMIGOS.ChatSearch.Found": "{count} found.",
+  "DNDAMIGOS.ChatSearch.Capped": "Showing the newest {shown} of {count} found. Narrow the search to see older ones."
 }

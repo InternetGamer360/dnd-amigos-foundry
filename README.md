@@ -57,6 +57,9 @@ divider so it's easy to find without being mistaken for one of them.
   setting can force this module's own). Breaks are logged and announced through the
   hooks `dndAmigosBreakStart`, `dndAmigosBreakEnd`, `dndAmigosPlayerAway` and
   `dndAmigosPlayerBack`.
+- **Search the chat** (box above the chat). Searches every message you can see, not just
+  the ones on screen: words (all must appear), a player or character, a date range, rolls
+  only. Matches are listed with the words highlighted; clear it and the chat is untouched.
 - **Hero points raise the degree of success** (house rule, Pathfinder 2e / Starfinder 2e).
   Reroll using Hero Point on a check card spends the point and raises the result one
   degree instead of rerolling; the dice stay the same. Needs a DC; a critical success

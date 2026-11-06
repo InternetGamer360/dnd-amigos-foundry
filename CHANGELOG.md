@@ -2,6 +2,9 @@
 
 All notable changes to the D&D Amigos Connector. Newest first.
 
+## 1.14.0 — 2026-11-05
+- **Search the chat.** A search box above the chat (sidebar and pop-out). It looks through every message in the world that you can see, not only the ones drawn on screen: type words (all must appear, in any order, in what was said, a roll card's text, the speaker, the player or a dice formula), and the sliders button adds a player or character, a from/to date and "rolls only". Matches are listed with the words highlighted (newest 300 at most) and look and work like normal chat messages. Clear it, or press Escape in the box, and the chat is back untouched; new matching messages join the results as they are posted.
+
 ## 1.13.2 — 2026-11-05
 - **A hero point is a heroic moment.** Spending a hero point on a check now puts a gold "Heroic Moment!" banner in the chat, naming the hero and, with the house rule on, the change ("Rogar spends a Hero Point and turns a failure into a success!"). With the rule off it says the hero spends a Hero Point to try again. Nothing is posted if the point wasn't actually spent.
 

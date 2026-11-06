@@ -777,3 +777,80 @@
   margin: 0;
   font-weight: 600;
 }
+
+/* Chat search (scripts/chat-search.js) */
+.dah-hidden {
+  display: none !important;
+}
+
+.dah-chatsearch {
+  flex: 0 0 auto;
+  padding: 4px 6px;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.4);
+}
+
+.dah-chatsearch .dah-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dah-chatsearch .dah-row i {
+  opacity: 0.7;
+}
+
+.dah-chatsearch .dah-q {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dah-chatsearch button {
+  flex: 0 0 auto;
+  width: auto;
+  line-height: 1.6;
+  padding: 0 7px;
+  margin: 0;
+}
+
+.dah-chatsearch .dah-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.dah-chatsearch .dah-filters[hidden] {
+  display: none;
+}
+
+.dah-chatsearch .dah-filters label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dah-chatsearch .dah-filters select,
+.dah-chatsearch .dah-filters input[type="date"] {
+  height: 22px;
+  min-width: 0;
+}
+
+.dah-chatsearch .dah-status {
+  margin-top: 3px;
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.dah-results-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+mark.dah-hit {
+  background: #ffd54a;
+  color: #000;
+  padding: 0 1px;
+  border-radius: 2px;
+}
