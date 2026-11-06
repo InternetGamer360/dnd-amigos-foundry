@@ -344,5 +344,9 @@
   "DNDAMIGOS.HeroPoint.AlreadyCrit": "That is already a critical success, so the hero point was not spent.",
   "DNDAMIGOS.HeroPoint.NoPoints": "{name} has no hero points left.",
   "DNDAMIGOS.Help.HeroPoint.Title": "Hero points (house rule)",
-  "DNDAMIGOS.Help.HeroPoint.Body": "On a Pathfinder 2e / Starfinder 2e check card, right-click and choose Reroll using Hero Point as usual. With the house rule on (Configure Settings, \"Hero points raise the degree of success\"), the dice are not rerolled: the hero point is spent and the result goes up one degree. A failure becomes a success, a success a critical success, a critical failure a failure. The card shows the new degree, marked \"Hero Point\". It needs a DC on the check, and a critical success can't go higher, so in both cases nothing is spent. Turn the setting off to go back to the normal reroll. Mythic points and the keep-higher/lower options are unchanged."
+  "DNDAMIGOS.Help.HeroPoint.Body": "On a Pathfinder 2e / Starfinder 2e check card, right-click and choose Reroll using Hero Point as usual. With the house rule on (Configure Settings, \"Hero points raise the degree of success\"), the dice are not rerolled: the hero point is spent and the result goes up one degree. A failure becomes a success, a success a critical success, a critical failure a failure. The card shows the new degree, marked \"Hero Point\". It needs a DC on the check, and a critical success can't go higher, so in both cases nothing is spent. The GM can switch it on or off from the D&D Amigos menu (the \"Hero point house rule\" entry, GM only) or in the settings; off goes back to the normal reroll. Mythic points and the keep-higher/lower options are unchanged.",
+  "DNDAMIGOS.HeroPoint.MenuOn": "Hero point house rule: ON (click to turn off)",
+  "DNDAMIGOS.HeroPoint.MenuOff": "Hero point house rule: OFF (click to turn on)",
+  "DNDAMIGOS.HeroPoint.NowOn": "Hero point house rule is now ON: a hero point raises the degree of success.",
+  "DNDAMIGOS.HeroPoint.NowOff": "Hero point house rule is now OFF: a hero point rerolls as normal."
 }

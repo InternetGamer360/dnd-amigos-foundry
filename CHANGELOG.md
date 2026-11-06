@@ -2,6 +2,9 @@
 
 All notable changes to the D&D Amigos Connector. Newest first.
 
+## 1.13.1 — 2026-11-05
+- **GM toggle for the hero point house rule.** A GM-only entry in the D&D Amigos menu, "Hero point house rule: ON/OFF", flips the rule in one click and says what it is now. (It is the same world setting as before, which is still on by default.)
+
 ## 1.13.0 — 2026-11-05
 - **House rule: hero points raise the degree of success.** On a Pathfinder 2e / Starfinder 2e check card, Reroll using Hero Point no longer rerolls: it spends the hero point and raises the result one degree (failure to success, success to critical success, critical failure to failure). The dice stay the same and the card shows the new degree, marked "Hero Point". Needs a DC on the check, and a critical success can't go higher; in both cases nothing is spent and a message says why. On by default; the world setting "Hero points raise the degree of success" turns it off. Mythic points and keep-higher/lower are untouched.
 

@@ -17,10 +17,26 @@
 //   - a check with no DC (nothing to raise the degree against);
 //   - a check that is already a critical success.
 // Mythic points, "keep higher/lower" and the plain reroll entries are left exactly as they were.
+//
+// The GM can switch it from the D&D Amigos menu (toggleHeroPointRule) or the world setting.
 
 import { MODULE_ID, t } from './util.js';
 
 const SYSTEMS = ['pf2e', 'sf2e'];
+
+/** True where the house rule applies at all (the menu entry is hidden elsewhere). */
+export const heroPointRuleAvailable = () => SYSTEMS.includes(game.system.id);
+
+/** The menu entry's text: the rule's state, and what a click does. */
+export const heroPointRuleLabel = () => t(game.settings.get(MODULE_ID, 'heroPointBump') ? 'DNDAMIGOS.HeroPoint.MenuOn' : 'DNDAMIGOS.HeroPoint.MenuOff');
+
+/** GM only (a world setting): flips the house rule and says what it is now. */
+export async function toggleHeroPointRule() {
+  if (!game.user.isGM) return;
+  const on = !game.settings.get(MODULE_ID, 'heroPointBump');
+  await game.settings.set(MODULE_ID, 'heroPointBump', on);
+  ui.notifications.info(t(on ? 'DNDAMIGOS.HeroPoint.NowOn' : 'DNDAMIGOS.HeroPoint.NowOff'));
+}
 
 Hooks.once('init', () => {
   game.settings.register(MODULE_ID, 'heroPointBump', {

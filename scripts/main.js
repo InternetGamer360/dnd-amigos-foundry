@@ -16,7 +16,7 @@ import { configureRecap, openRecapWindow } from './recap.js';
 import { openBreakMenu } from './break.js';
 import { configureEyffo, openEyffo } from './eyffo.js';
 import { configureSheetCheck } from './sheet-check.js';
-import './hero-points.js'; // house rule: a hero point raises the degree of success (registers its own hooks)
+import { heroPointRuleAvailable, heroPointRuleLabel, toggleHeroPointRule } from './hero-points.js'; // house rule: a hero point raises the degree of success (also registers its own hooks)
 import { configureCharacterImport, openCharacterImport } from './character-import.js';
 import { MODULE_ID, esc as attr, tipHeaderButtons, addHeaderButton } from './util.js';
 
@@ -1025,6 +1025,7 @@ function openAmigosMenu() {
     entries.push({ action: 'session-recap', icon: 'fa-feather', labelKey: 'DNDAMIGOS.JournalDirectory.SessionRecap', onClick: openRecapWindow });
     entries.push({ action: 'import-info', icon: 'fa-download', labelKey: 'DNDAMIGOS.JournalDirectory.ImportInfo', onClick: importCampaignInfo });
     entries.push({ action: 'push-lore', icon: 'fa-upload', labelKey: 'DNDAMIGOS.JournalDirectory.PushLore', onClick: pushLore });
+    if (heroPointRuleAvailable()) entries.push({ action: 'hero-rule', icon: 'fa-circle-h', label: heroPointRuleLabel(), onClick: toggleHeroPointRule });
   }
 
   const dialog = openDialog({
@@ -1033,7 +1034,7 @@ function openAmigosMenu() {
       <div class="dnd-amigos-menu-list">
         ${entries.map((e) => `
           <button type="button" class="dnd-amigos-menu-item${e.gold ? ' dnd-amigos-menu-item-gold' : ''}${e.help ? ' dnd-amigos-menu-item-help' : ''}" data-action="${e.action}">
-            <i class="fa-solid ${e.icon}"></i>${game.i18n.localize(e.labelKey)}
+            <i class="fa-solid ${e.icon}"></i>${e.label ?? game.i18n.localize(e.labelKey)}
           </button>
         `).join('')}
       </div>
