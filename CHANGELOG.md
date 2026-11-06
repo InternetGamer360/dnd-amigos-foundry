@@ -2,6 +2,9 @@
 
 All notable changes to the D&D Amigos Connector. Newest first.
 
+## 1.13.2 — 2026-11-05
+- **A hero point is a heroic moment.** Spending a hero point on a check now puts a gold "Heroic Moment!" banner in the chat, naming the hero and, with the house rule on, the change ("Rogar spends a Hero Point and turns a failure into a success!"). With the rule off it says the hero spends a Hero Point to try again. Nothing is posted if the point wasn't actually spent.
+
 ## 1.13.1 — 2026-11-05
 - **GM toggle for the hero point house rule.** A GM-only entry in the D&D Amigos menu, "Hero point house rule: ON/OFF", flips the rule in one click and says what it is now. (It is the same world setting as before, which is still on by default.)
 

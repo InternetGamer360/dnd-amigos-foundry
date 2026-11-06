@@ -19,8 +19,11 @@
 // Mythic points, "keep higher/lower" and the plain reroll entries are left exactly as they were.
 //
 // The GM can switch it from the D&D Amigos menu (toggleHeroPointRule) or the world setting.
+//
+// Every hero point spent on a check, with the rule on or off, also puts a gold "Heroic moment" banner
+// in the chat (and calls the hook dndAmigosHeroPoint({ actor, from, to, raised }), for later use).
 
-import { MODULE_ID, t } from './util.js';
+import { MODULE_ID, esc, t } from './util.js';
 
 const SYSTEMS = ['pf2e', 'sf2e'];
 
@@ -59,14 +62,58 @@ Hooks.once('ready', () => {
   if (Check.rerollFromMessage.dndAmigosHeroPoint) return;
   const original = Check.rerollFromMessage;
   const wrapped = async function rerollFromMessage(message, options = {}) {
-    if (options?.resource !== 'hero-points' || !game.settings.get(MODULE_ID, 'heroPointBump')) {
-      return original.call(this, message, options);
-    }
-    return raiseWithHeroPoint(() => original.call(this, message, options), message);
+    const run = () => original.call(this, message, options);
+    if (options?.resource !== 'hero-points') return run();
+    if (!game.settings.get(MODULE_ID, 'heroPointBump')) return announcing(message, run, false);
+    return announcing(message, () => raiseWithHeroPoint(run, message), true);
   };
   wrapped.dndAmigosHeroPoint = true;
   Check.rerollFromMessage = wrapped;
 });
+
+const NEXT_DEGREE = { criticalFailure: 'failure', failure: 'success', success: 'criticalSuccess' };
+
+/**
+ * Runs a hero point reroll and, if it really spent a point, puts a banner in the chat. Wraps both
+ * the house rule and the normal reroll, so every hero point is an event whichever way it is set.
+ */
+async function announcing(message, run, raised) {
+  const actor = message?.actor;
+  const owner = actor?.isOfType?.('familiar') ? actor.master : actor;
+  const before = owner?.isOfType?.('character') ? owner.getResource?.('hero-points')?.value : undefined;
+  const context = message?.flags?.pf2e?.context;
+  const from = context?.outcome ?? context?.unadjustedOutcome ?? null;
+  const result = await run();
+  const after = before === undefined ? undefined : owner.getResource?.('hero-points')?.value;
+  if (before !== undefined && after !== undefined && after < before) {
+    try {
+      await announceHeroPoint({ owner, from, raised });
+    } catch (err) {
+      console.warn(`${MODULE_ID} | could not post the hero point banner`, err);
+    }
+  }
+  return result;
+}
+
+/** The banner: a heroic moment in the chat. */
+async function announceHeroPoint({ owner, from, raised }) {
+  const to = raised ? NEXT_DEGREE[from] ?? null : null;
+  const name = esc(owner.name);
+  const body = to
+    ? t('DNDAMIGOS.HeroPoint.Banner.Raised', { name, from: t(`DNDAMIGOS.HeroPoint.Degree.${from}`), to: t(`DNDAMIGOS.HeroPoint.Degree.${to}`) })
+    : t('DNDAMIGOS.HeroPoint.Banner.Rerolled', { name });
+  const stars = '<i class="fa-solid fa-star"></i>';
+  await ChatMessage.create({
+    speaker: ChatMessage.getSpeaker({ actor: owner }),
+    content: `<div class="dnd-amigos-heroic">
+      <div class="dah-stars">${stars}${stars}${stars}</div>
+      <h3>${t('DNDAMIGOS.HeroPoint.Banner.Title')}</h3>
+      <p>${body}</p>
+    </div>`,
+    flags: { [MODULE_ID]: { heroic: true } },
+  });
+  Hooks.callAll('dndAmigosHeroPoint', { actor: owner, from, to, raised });
+}
 
 /** `reroll()` runs the system's own reroll; this arranges for it to raise the degree instead. */
 async function raiseWithHeroPoint(reroll, message) {
